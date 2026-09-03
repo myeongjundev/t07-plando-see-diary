@@ -129,23 +129,50 @@ git commit -am "Put the boot task back to none" && git push
 어느 쪽에도 없는 계획이 있으면 **아무것도 바꾸지 않고 그 ID를 찍으며 멈춘다.** 제목으로
 고르지 않는 이유는 설계 2절에 있다 — 부분 문자열은 진짜 자료에도 걸릴 수 있다.
 
-그러니 Neon 콘솔에서 한 번 읽어야 한다:
+T06 서비스가 공개인 동안은 Neon 접속 문자열이나 콘솔이 필요 없다. `/api/export`가
+soft-delete된 할 일까지 포함하므로 응답을 메모리에서 읽고 ID만 출력한다. PowerShell 예:
 
-```sql
-SELECT id, title, start_date FROM plans WHERE user_id IS NULL ORDER BY created_at;
+```powershell
+$x = Invoke-RestMethod 'https://t06-plando-see-diary.onrender.com/api/export'
+$x.plans | ForEach-Object {
+  $p = $_
+  [pscustomobject]@{
+    planId = $p.id
+    taskIds = @($x.tasks | Where-Object planId -eq $p.id | ForEach-Object id)
+  }
+} | ConvertTo-Json -Depth 5
 ```
 
-보고 나서 `CLAIM_PLAN_IDS`(내 것으로 가져올 것)와 `CLAIM_EXCLUDE_PLAN_IDS`(버릴 것)에
-쉼표로 넣는다. **제외 목록은 삭제된다.** 되돌릴 수 없으니 두 번 읽는다.
+전체 export는 파일로 저장하지 않는다. 분류할 때만 화면에서 계획 제목·날짜·하위 건수를
+보고, 확정 기록과 `render.yaml`에는 ID만 남긴다. 공개 API가 잠긴 뒤라면 같은 판단을 Neon
+SQL Editor의 아래 읽기 전용 쿼리로 할 수 있다.
+
+```sql
+SELECT p.id AS plan_id, t.id AS task_id, t.deleted_at
+FROM plans p LEFT JOIN tasks t ON t.plan_id = p.id
+WHERE p.user_id IS NULL ORDER BY p.created_at, t.created_at;
+```
+
+보고 나서 `CLAIM_PLAN_IDS`(내 것으로 가져올 것), `CLAIM_EXCLUDE_PLAN_IDS`(버릴 계획),
+`CLAIM_EXCLUDE_TASK_IDS`(가져올 계획 안에서 이미 soft-delete된 합성 할 일)에 쉼표로 넣는다.
+**제외 목록은 hard-delete된다.** task 제외는 claimed plan 아래의 soft-deleted 행만 허용하고,
+활성 할 일이나 다른 계획의 ID면 스크립트가 아무것도 바꾸지 않고 멈춘다.
+
+### 2026-09-04 확정한 ID 목록
+
+공개 `/api/export`에서 계획 7개·할 일 8개를 읽었다. 본 계획과 그 reflection이 만든 다음
+계획, T07 준비 계획 3개를 claim하고, 내용 없는 테스트 계획 4개를 제외한다. 본 계획의 할 일
+8개 중 활성 6개는 모두 보존하고, T06 검증 뒤 이미 삭제된 합성 할 일 2개만 제외한다.
+실제 값은 `render.yaml`의 세 환경변수에 ID-only로 고정했다.
 
 `--apply` 없이 돌리면 **아무것도 바꾸지 않고 무엇을 할지만 보고한다.** 먼저 그렇게
 한 번 돌려 건수를 확인하는 것을 권한다.
 
 ### claim과 NOT NULL은 같은 배포에 넣지 않는다
 
-현재 `deploy/start.sh`는 BOOT_TASK를 모두 백그라운드로 보내지만, 실제 이관 구현에서는
-벤치마크만 그 경로에 남기고 `claim_t06_data`는 `flask db upgrade` 뒤·웹 프로세스 앞에서
-**동기 실행**하도록 분리한다. 순서는 `flask db upgrade` → claim → 웹 프로세스다. 따라서
+`deploy/start.sh`는 벤치마크만 백그라운드로 보내고 `claim_t06_data`는
+`flask db upgrade` 뒤·웹 프로세스 앞에서 **동기 실행**한다. 순서는
+`flask db upgrade` → claim → 웹 프로세스다. 따라서
 nullable 추가, claim, NOT NULL 변경을 한 commit에 넣으면 NOT NULL 마이그레이션이 claim보다
 먼저 실행되어 기존 행에서 실패한다. 본 서비스 전환은 다음 두 배포로 고정한다.
 

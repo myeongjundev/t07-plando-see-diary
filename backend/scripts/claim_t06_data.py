@@ -26,6 +26,7 @@ argument would also be in the process list and the log.
     BOOT_TASK_ARGS=--apply
     CLAIM_EMAIL=...            CLAIM_PASSWORD=...        (sync: false)
     CLAIM_PLAN_IDS=a,b,c       CLAIM_EXCLUDE_PLAN_IDS=d,e
+    CLAIM_EXCLUDE_TASK_IDS=f,g (claimed plans 안의 삭제된 합성 할 일만)
 """
 from __future__ import annotations
 
@@ -41,7 +42,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app import create_app  # noqa: E402
 from app.extensions import db  # noqa: E402
-from app.models import Plan, User, normalize_email  # noqa: E402
+from app.models import Plan, Task, User, normalize_email  # noqa: E402
 from app.security.passwords import hash_password  # noqa: E402
 
 
@@ -91,16 +92,43 @@ def partition(unowned: list[str], claim: list[str], exclude: list[str]) -> tuple
     return to_claim, to_delete
 
 
-def run(email: str, password: str, claim: list[str], exclude: list[str], *, apply: bool) -> dict:
+def excluded_tasks(unowned: list[str], claim: list[str], exclude: list[str]) -> list[Task]:
+    """Resolve task ids without ever deleting a live task by mistake.
+
+    Missing ids are allowed because a successful deploy can be retried after
+    those rows have already gone. A present id must be under a plan selected
+    for claim and must already be soft-deleted; active diary work is never a
+    candidate for this cleanup.
+    """
+    if not exclude:
+        return []
+    rows = list(db.session.scalars(select(Task).where(Task.id.in_(exclude))))
+    claimed = set(claim)
+    unowned_set = set(unowned)
+    for task in rows:
+        if task.plan_id not in unowned_set:
+            raise ClaimRefused(f"task is not under an unowned T06 plan: {task.id}")
+        if task.plan_id not in claimed:
+            raise ClaimRefused(f"task is not under a plan selected for claim: {task.id}")
+        if task.deleted_at is None:
+            raise ClaimRefused(f"active task cannot be excluded: {task.id}")
+    return rows
+
+
+def run(email: str, password: str, claim: list[str], exclude: list[str],
+        exclude_task_ids: list[str] | None = None, *, apply: bool) -> dict:
     unowned = list(db.session.scalars(select(Plan.id).where(Plan.user_id.is_(None))))
     to_claim, to_delete = partition(unowned, claim, exclude)
+    to_delete_tasks = excluded_tasks(unowned, to_claim, exclude_task_ids or [])
 
     report = {
         "unowned_before": len(unowned),
         "to_claim": len(to_claim),
         "to_delete": len(to_delete),
+        "to_delete_tasks": len(to_delete_tasks),
         "claim_ids": to_claim,
         "delete_ids": to_delete,
+        "delete_task_ids": [task.id for task in to_delete_tasks],
         "applied": apply,
         "account_created": False,
     }
@@ -111,6 +139,8 @@ def run(email: str, password: str, claim: list[str], exclude: list[str], *, appl
     user, created = find_or_create_user(email, password)
     report["account_created"] = created
 
+    for task in to_delete_tasks:
+        db.session.delete(task)
     if to_claim:
         db.session.execute(
             db.update(Plan).where(Plan.id.in_(to_claim), Plan.user_id.is_(None))
@@ -140,6 +170,7 @@ def render(report: dict) -> str:
         f"unowned plans before: {report['unowned_before']}",
         f"to claim            : {report['to_claim']}",
         f"to delete           : {report['to_delete']}",
+        f"tasks to delete     : {report['to_delete_tasks']}",
         f"account created     : {report['account_created']}",
         f"unowned plans after : {report['unowned_after']}",
     ]
@@ -147,6 +178,8 @@ def render(report: dict) -> str:
     for label, key in (("claimed", "claim_ids"), ("deleted", "delete_ids")):
         for plan_id in report[key]:
             lines.append(f"  {label}: {plan_id}")
+    for task_id in report["delete_task_ids"]:
+        lines.append(f"  deleted task: {task_id}")
     if report["applied"] and report["unowned_after"] == 0:
         lines.append("NULL=0 -- the NOT NULL migration can go in the next deploy.")
     elif report["applied"]:
@@ -172,8 +205,14 @@ def main() -> int:
     app = create_app()
     with app.app_context():
         try:
-            report = run(email, password, id_list("CLAIM_PLAN_IDS"), id_list("CLAIM_EXCLUDE_PLAN_IDS"),
-                         apply=args.apply)
+            report = run(
+                email,
+                password,
+                id_list("CLAIM_PLAN_IDS"),
+                id_list("CLAIM_EXCLUDE_PLAN_IDS"),
+                id_list("CLAIM_EXCLUDE_TASK_IDS"),
+                apply=args.apply,
+            )
         except ClaimRefused as refusal:
             db.session.rollback()
             print(f"claim_t06_data refused: {refusal}", file=sys.stderr)

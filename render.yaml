@@ -43,9 +43,14 @@ services:
       # this is the list to read twice. Ids only -- they come from reading the
       # deployed table, not from matching titles.
       - key: CLAIM_PLAN_IDS
-        value: ""
+        value: "a0d06436-feb3-4323-9645-3ec53f283041,16ffc457-0a0e-42ff-bc9f-587e674815e4,7bda0448-07f1-4c0e-b407-0ee6b4c7d81c"
       - key: CLAIM_EXCLUDE_PLAN_IDS
-        value: ""
+        value: "32c69cbe-0717-48ad-a35c-0e0619da2637,7c3ec5f9-d652-4336-8af4-468ff6dec6ad,ec4f2f23-3311-435d-9925-f974ea585c2b,f396e61b-f895-437a-9ba7-f49c77d99bf5"
+      # These two verification artifacts were already soft-deleted in T06.
+      # The claim script refuses to delete an active task or a task outside a
+      # plan selected above, so an id typo cannot remove live diary work.
+      - key: CLAIM_EXCLUDE_TASK_IDS
+        value: "8fbedf3d-446f-4670-afff-48798241c3e0,dd4f0a40-2439-4bb7-a12e-80a96943ff43"
       - key: CLAIM_EMAIL
         sync: false
       # Never an argument: BOOT_TASK_ARGS is committed here, and a command line

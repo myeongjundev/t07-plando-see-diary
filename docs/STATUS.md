@@ -1,6 +1,22 @@
 # T07 project status (T06 history retained below)
 
-Updated: 2026-09-03 KST
+Updated: 2026-09-04 KST
+
+## 2026-09-04 T06 production ID inventory fixed for claim
+
+- Read the still-public T06 `/api/export` in memory and retained IDs only; no
+  database URL, full export file, password, or diary body was stored.
+- The deployed snapshot has 7 plans and 8 tasks. `render.yaml` now fixes all 7
+  plan IDs into disjoint claim/exclude lists: 3 retained plans and 4 empty test
+  plans. The lists exactly cover the deployed plan set.
+- The retained main plan has 8 task rows. Six active rows stay; two T06
+  verification artifacts that were already soft-deleted are identified by
+  fixed task ID for hard deletion during claim.
+- `claim_t06_data.py` refuses task cleanup unless the row belongs to an
+  unowned plan selected for claim and is already soft-deleted. This prevents
+  an ID typo from deleting active diary work. Its 11 focused tests pass.
+- This turn only prepared the lists and safeguards. No live database row was
+  changed; mutation still requires `BOOT_TASK=claim_t06_data` with `--apply`.
 
 ## 2026-09-03 T07 authentication design review resolved
 

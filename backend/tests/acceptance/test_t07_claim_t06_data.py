@@ -7,7 +7,7 @@ mostly about what it refuses to do.
 from __future__ import annotations
 
 import importlib.util
-from datetime import date
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -70,6 +70,29 @@ def test_an_id_in_both_lists_stops_the_run(legacy):
     with pytest.raises(claim.ClaimRefused, match="both lists"):
         claim.run(EMAIL, PASSWORD, [keep, drop], [drop], apply=True)
     assert db.session.get(Plan, keep).user_id is None
+
+
+def test_a_soft_deleted_synthetic_task_can_be_excluded_by_fixed_id(legacy):
+    keep, drop = legacy
+    task = db.session.get(Task, LEGACY_TASK["id"])
+    task.deleted_at = datetime.now(timezone.utc)
+    db.session.commit()
+
+    report = claim.run(EMAIL, PASSWORD, [keep], [drop], [task.id], apply=True)
+
+    assert report["delete_task_ids"] == [LEGACY_TASK["id"]]
+    assert db.session.get(Task, LEGACY_TASK["id"]) is None
+    assert db.session.get(Plan, keep) is not None
+
+
+def test_an_active_task_can_never_be_excluded(legacy):
+    keep, drop = legacy
+    with pytest.raises(claim.ClaimRefused, match="active task"):
+        claim.run(EMAIL, PASSWORD, [keep], [drop], [LEGACY_TASK["id"]], apply=True)
+
+    assert db.session.get(Task, LEGACY_TASK["id"]) is not None
+    assert db.session.get(Plan, keep).user_id is None
+    assert db.session.scalar(select(db.func.count()).select_from(User)) == 0
 
 
 def test_without_apply_nothing_changes(legacy):
