@@ -6,6 +6,8 @@ rotation being a single locked transaction.
 """
 from __future__ import annotations
 
+import pytest
+
 from concurrent.futures import ThreadPoolExecutor
 from threading import Barrier
 
@@ -17,6 +19,16 @@ from app.services.sessions import ROTATED
 from test_t07_signup_login import EMAIL, PASSWORD, login, signup
 
 KEY = "synthetic-test-signing-key-not-a-real-secret-long-enough-for-hs256"
+
+
+@pytest.fixture()
+def client(anonymous_client):
+    """These tests build the session themselves, so they start signed out.
+
+    The shared `client` arrives logged in, which is right for the tests that are
+    about the diary and wrong for the ones that are about the lock.
+    """
+    return anonymous_client
 
 
 def csrf_headers(client):
@@ -109,7 +121,7 @@ def test_refresh_without_the_csrf_header_is_refused_and_spends_nothing(client, m
     logged_in(client)
     before = client.get_cookie(REFRESH_COOKIE, path=REFRESH_PATH).value
 
-    assert refresh(client, headers={}).status_code == 403
+    assert refresh(client, headers={}, csrf=False).status_code == 403
 
     assert client.get_cookie(REFRESH_COOKIE, path=REFRESH_PATH).value == before
     assert db.session.scalar(db.select(db.func.count()).select_from(RefreshSession)) == 1
@@ -154,7 +166,7 @@ def test_an_unknown_token_and_a_missing_header_are_not_distinguishable(client, m
     with_header = refresh(client, headers={"X-CSRF-Token": csrf})
     # The 401 above cleared the cookies, so the dead token goes back on.
     client.set_cookie(REFRESH_COOKIE, "not-a-real-token", path=REFRESH_PATH)
-    without_header = refresh(client, headers={})
+    without_header = refresh(client, headers={}, csrf=False)
 
     assert with_header.status_code == without_header.status_code == 401
     assert with_header.get_json() == without_header.get_json()

@@ -8,6 +8,7 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 
 from app import create_app
+from conftest import browser_for, copy_session
 from app.extensions import db
 from app.models import CompletionEvent, ExecutionLog
 from test_card2_tasks import create_plan, create_task
@@ -61,7 +62,7 @@ def test_replay_after_reopen_and_new_completion_cycle(client):
     url = f"/api/tasks/{task['id']}"
     first = client.post(url + "/complete", json=KEY).json
     assert client.post(url + "/complete", json={"idempotencyKey": "another-key"}).status_code == 409
-    client.post(url + "/reopen")
+    client.post(url + "/reopen", json={})
     replay = client.post(url + "/complete", json=KEY).json
     assert replay["completionEvent"] == first["completionEvent"]
     assert replay["task"]["status"] == "active"
@@ -69,7 +70,7 @@ def test_replay_after_reopen_and_new_completion_cycle(client):
     assert client.post(url + "/complete", json={"idempotencyKey": "another-key"}).status_code == 200
     assert db.session.scalar(select(func.count()).select_from(CompletionEvent)) == 2
     assert client.get(f"/api/plans/{plan['id']}/see").json["completedCount"] == 1
-    client.delete(url)
+    client.delete(url, json={})
     assert client.get(f"/api/plans/{plan['id']}/see").json["completedCount"] == 0
     assert client.post(url + "/complete", json=KEY).status_code == 404
     assert client.post(url + "/executions", json=LOG).status_code == 404
@@ -103,12 +104,18 @@ def test_invalid_log_is_atomic(client, patch):
     assert client.get(f"/api/tasks/{task['id']}").json["task"] == task
 
 
-@pytest.mark.parametrize("payload", [None, {}, [], {"idempotencyKey": "short"},
-                                     {"idempotencyKey": 42}, {"idempotencyKey": "x" * 101}])
-def test_invalid_completion_does_not_mutate(client, payload):
+# `None` means no body at all, which T07 refuses one step earlier: every
+# state-changing request must declare application/json, so it never reaches the
+# payload check. Still refused, still nothing written -- which is what this test
+# is for -- but with the status that says why.
+@pytest.mark.parametrize("payload, expected", [(None, 415), ({}, 400), ([], 400),
+                                               ({"idempotencyKey": "short"}, 400),
+                                               ({"idempotencyKey": 42}, 400),
+                                               ({"idempotencyKey": "x" * 101}, 400)])
+def test_invalid_completion_does_not_mutate(client, payload, expected):
     plan = create_plan(client)
     task = create_task(client, plan["id"])
-    assert client.post(f"/api/tasks/{task['id']}/complete", json=payload).status_code == 400
+    assert client.post(f"/api/tasks/{task['id']}/complete", json=payload).status_code == expected
     assert db.session.scalar(select(func.count()).select_from(CompletionEvent)) == 0
     assert client.get(f"/api/tasks/{task['id']}").json["task"] == task
 
@@ -118,13 +125,14 @@ def test_concurrent_duplicate_requests(tmp_path):
     app = create_app({"TESTING": True, "SQLALCHEMY_DATABASE_URI": f"sqlite:///{(tmp_path / 'race.db').as_posix()}"})
     with app.app_context():
         db.create_all()
-    client = app.test_client()
+    client = browser_for(app)
     plan = create_plan(client)
     task = create_task(client, plan["id"])
     barrier = Barrier(4)
 
     def complete(_):
         with app.test_client() as worker:
+            copy_session(client, worker)
             barrier.wait(timeout=10)
             return worker.post(f"/api/tasks/{task['id']}/complete", json=KEY)
 

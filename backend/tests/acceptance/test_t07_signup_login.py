@@ -5,6 +5,8 @@ account, and that a failed login says the same thing however it failed.
 """
 from __future__ import annotations
 
+import pytest
+
 from concurrent.futures import ThreadPoolExecutor
 from threading import Barrier
 
@@ -15,6 +17,16 @@ from app.models import User
 EMAIL = "synthetic-user@example.invalid"
 PASSWORD = "합성-비밀번호-9f2a"
 JSON = {"Content-Type": "application/json"}
+
+
+@pytest.fixture()
+def client(anonymous_client):
+    """These tests build the session themselves, so they start signed out.
+
+    The shared `client` arrives logged in, which is right for the tests that are
+    about the diary and wrong for the ones that are about the lock.
+    """
+    return anonymous_client
 
 
 def signup(client, email=EMAIL, password=PASSWORD, **kwargs):

@@ -23,7 +23,7 @@ def test_t06_c36_complete_export_retains_deleted_history_and_links(client):
     assert client.post(f"/api/tasks/{task['id']}/complete", json={'idempotencyKey': 'card5-export-key'}).status_code == 200
     reflection = client.post(f"/api/plans/{plan['id']}/reflections", json=REFLECTION).json['reflection']
     next_plan = client.post(f"/api/reflections/{reflection['id']}/next-plan", json=NEXT).json['plan']
-    assert client.delete(f"/api/tasks/{task['id']}").status_code == 204
+    assert client.delete(f"/api/tasks/{task['id']}", json={}).status_code == 204
     response = client.get('/api/export')
     assert response.status_code == 200
     assert response.headers['Content-Disposition'] == 'attachment; filename="t06-diary-v2.json"'

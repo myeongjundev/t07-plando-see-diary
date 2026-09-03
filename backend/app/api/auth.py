@@ -1,10 +1,11 @@
-"""Signup and login. T07-C94, C95, C98, C99.
+"""The authentication endpoints. T07-C94 through C99, C109, C110, C114.
 
-Session issuance is not wired up yet -- that is step 4, and it lands on the
-`login` handler here. Until then login answers whether the credentials are
-right and sets nothing.
+signup and login answer for themselves, because there is no session yet to hang
+a guard on; refresh answers for itself too, because it is the request that
+arrives exactly when the access token has expired. logout and me sit behind
+`@login_required` like every other protected route.
 """
-from flask import g, jsonify, request
+from flask import jsonify, request
 
 from app.api import api
 from app.api.plans import error_response
@@ -13,6 +14,7 @@ from app.auth.csrf import CSRF_FAILED, NOT_JSON, check_state_changing_request, c
 from app.auth.guards import NOT_AUTHENTICATED, login_required
 from app.extensions import db
 from app.models import User
+from app.services.ownership import current_session_id, current_user_id
 from app.security.http import check_unauthenticated_request, origin_is_allowed, wants_json
 from app.services.sessions import (
     LOGOUT,
@@ -162,7 +164,7 @@ def logout():
     if refusal:
         return error_response(refusal[0], status=refusal[1])
 
-    end_session(g.current_session.id, LOGOUT)
+    end_session(current_session_id(), LOGOUT)
     response = jsonify({"ok": True})
     return clear_session(response)
 
@@ -176,7 +178,7 @@ def me():
     from cookies it cannot read -- which is why the gate cannot be talked out of
     a redirect by editing local state.
     """
-    user = db.session.get(User, g.current_user)
+    user = db.session.get(User, current_user_id())
     if user is None:  # pragma: no cover - a live session whose account is gone
         return error_response("로그인이 필요합니다.", status=401)
     return jsonify({"user": serialize_user(user)})

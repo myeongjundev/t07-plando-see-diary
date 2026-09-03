@@ -34,7 +34,7 @@ def test_t06_c28_to_c32_and_c83_exact_metrics_and_sources(client, monkeypatch):
             add_log(client, tasks[1], 100, "문서 확인")]
     deleted = create_task(client, plan["id"], estimatedMinutes=999)
     add_log(client, deleted, 999, "제외할 기록")
-    client.delete(f"/api/tasks/{deleted['id']}")
+    client.delete(f"/api/tasks/{deleted['id']}", json={})
     other_plan = create_plan(client)
     add_log(client, create_task(client, other_plan["id"]), 999, "다른 계획")
 

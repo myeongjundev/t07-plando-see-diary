@@ -62,10 +62,10 @@ def test_t06_c10_to_c13_edit_complete_reopen_and_delete(client):
     completed = client.post(f"/api/tasks/{task['id']}/complete", json={"idempotencyKey": "card2-complete"})
     assert completed.get_json()["task"]["status"] == "completed"  # T06-C11
 
-    reopened = client.post(f"/api/tasks/{task['id']}/reopen")
+    reopened = client.post(f"/api/tasks/{task['id']}/reopen", json={})
     assert reopened.get_json()["task"]["status"] == "active"  # T06-C12
 
-    deleted = client.delete(f"/api/tasks/{task['id']}")
+    deleted = client.delete(f"/api/tasks/{task['id']}", json={})
     assert deleted.status_code == 204
     assert client.get(f"/api/tasks/{task['id']}").status_code == 404  # T06-C13
     remaining_ids = [item["id"] for item in client.get(f"/api/plans/{plan['id']}/tasks").get_json()["tasks"]]

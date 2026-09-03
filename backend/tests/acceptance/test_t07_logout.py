@@ -5,6 +5,8 @@ same method, the same cookie, succeeding before logout and refused after.
 """
 from __future__ import annotations
 
+import pytest
+
 from concurrent.futures import ThreadPoolExecutor
 from threading import Barrier
 
@@ -15,6 +17,16 @@ from app.models import RefreshSession
 from app.services.sessions import LOGOUT, ROTATED
 from test_t07_refresh_rotation import KEY, csrf_headers, logged_in
 from test_t07_signup_login import login, signup
+
+
+@pytest.fixture()
+def client(anonymous_client):
+    """These tests build the session themselves, so they start signed out.
+
+    The shared `client` arrives logged in, which is right for the tests that are
+    about the diary and wrong for the ones that are about the lock.
+    """
+    return anonymous_client
 
 
 def logout(client, **kwargs):
@@ -120,7 +132,7 @@ def test_logout_needs_the_csrf_header(client, monkeypatch):
     """Otherwise any page could log the user out."""
     monkeypatch.setenv("JWT_SECRET", KEY)
     logged_in(client)
-    assert logout(client, headers={}).status_code == 403
+    assert logout(client, headers={}, csrf=False).status_code == 403
     assert db.session.scalar(db.select(RefreshSession)).revoked_at is None
     assert client.get("/api/auth/me").status_code == 200
 

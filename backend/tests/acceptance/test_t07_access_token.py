@@ -29,6 +29,16 @@ def _fixed_key(monkeypatch):
     monkeypatch.setenv("JWT_SECRET", "synthetic-test-signing-key-not-a-real-secret-long-enough-for-hs256")
 
 
+@pytest.fixture()
+def client(anonymous_client):
+    """These tests build the session themselves, so they start signed out.
+
+    The shared `client` arrives logged in, which is right for the tests that are
+    about the diary and wrong for the ones that are about the lock.
+    """
+    return anonymous_client
+
+
 def test_issued_token_round_trips():
     token, claims = issue_access_token(USER_ID, SESSION_ID)
     read = read_access_token(token)

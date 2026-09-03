@@ -6,6 +6,7 @@ from typing import Any
 from sqlalchemy import func, select
 
 from app.extensions import db
+from app.services.ownership import owner_for_new_plan
 from app.models import Plan, PlanRevision
 from app.time import utc_iso
 
@@ -96,7 +97,10 @@ def validate_plan(payload: dict[str, Any], *, partial: bool = False) -> dict[str
 
 def create_plan(payload: dict[str, Any]) -> Plan:
     values = validate_plan(payload)
-    plan = Plan(**values)
+    # Stamped here rather than left to the caller. A plan created without an
+    # owner belongs to nobody: it is invisible to every scoped query, which
+    # reads as the row having been lost rather than as the bug it is.
+    plan = Plan(user_id=owner_for_new_plan(), **values)
     db.session.add(plan)
     db.session.commit()
     return plan

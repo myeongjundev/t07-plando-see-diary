@@ -102,7 +102,12 @@ def next_plan(reflection: Reflection, payload) -> tuple[Plan, bool]:
         db.session.commit()
         return plan, True
     values["carried_improvement"] = reflection.improvement
-    plan = Plan(**values)
+    # The successor belongs to whoever owns the plan the reflection is on, not
+    # to whoever happens to be asking. The reflection was already checked as
+    # theirs, so these are the same user -- taking it from the row rather than
+    # the request keeps that true even if the guard above ever moves.
+    parent = db.session.get(Plan, reflection.plan_id)
+    plan = Plan(user_id=parent.user_id, **values)
     db.session.add(plan)
     db.session.flush()
     reflection.next_plan_id = plan.id
