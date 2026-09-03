@@ -17,6 +17,12 @@ services:
         value: "1"
       - key: DATABASE_URL
         sync: false
+      # Access-token signing key. Render generates it, so the value has never
+      # existed in git, on a laptop, or in a chat transcript -- which is what
+      # T07-C113 asks us to show. Rotating it invalidates live access tokens;
+      # refresh sessions survive and clients recover on their next rotation.
+      - key: JWT_SECRET
+        generateValue: true
       # One-off commands on Render Free: the plan has no shell, no SSH, no
       # one-off jobs and no cron, so the only code that ever runs on the
       # instance is this web service. deploy/start.sh reads BOOT_TASK at boot
