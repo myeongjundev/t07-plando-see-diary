@@ -31,7 +31,7 @@ Render 문서가 명시한다: 대시보드 Shell과 SSH는 **유료 웹 서비�
 - 이름은 **고정 목록**과 대조한다 (`bench_password_hashing` · `claim_t06_data` · `none`).
   환경변수는 원격 입력이 아니지만, 받은 문자열을 그대로 실행하는 셸은 만든 이유보다
   오래 남는다. 이것은 지울 물건이다.
-- **백그라운드로 돌린다.** 0.1 코어에서 몇 분 걸리는 작업이 포트를 붙잡고 있으면
+- **벤치마크는 백그라운드로 돌린다.** 0.1 코어에서 몇 분 걸리는 작업이 포트를 붙잡고 있으면
   헬스체크가 먼저 죽는다. waitress가 먼저 뜨고, 10초 뒤 작업이 시작된다.
 - 결과는 **로그로만** 나온다. Free에는 가져올 디스크가 없고, 엔드포인트를 열면 공개
   주소에 디버그 문이 하나 생긴다. `===== BOOT_TASK ... BEGIN/END =====`로 감싸
@@ -110,3 +110,22 @@ git commit -am "Put the boot task back to none" && git push
 
 이쪽은 **본 서비스에서** 돌린다. 버리는 벤치마크 서비스에서 돌리면 안 된다 — T06 자료를
 상대로 계정을 만드는 일이라, 한 번만, 옳은 곳에서 일어나야 한다.
+
+### claim과 NOT NULL은 같은 배포에 넣지 않는다
+
+현재 `deploy/start.sh`는 BOOT_TASK를 모두 백그라운드로 보내지만, 실제 이관 구현에서는
+벤치마크만 그 경로에 남기고 `claim_t06_data`는 `flask db upgrade` 뒤·웹 프로세스 앞에서
+**동기 실행**하도록 분리한다. 순서는 `flask db upgrade` → claim → 웹 프로세스다. 따라서
+nullable 추가, claim, NOT NULL 변경을 한 commit에 넣으면 NOT NULL 마이그레이션이 claim보다
+먼저 실행되어 기존 행에서 실패한다. 본 서비스 전환은 다음 두 배포로 고정한다.
+
+1. 첫 배포에는 `plans.user_id` nullable 추가와 claim 스크립트만 넣는다. BOOT_TASK를
+   `claim_t06_data`로 두고, 비밀번호는 별도 `sync: false` 환경변수에서 읽는다.
+2. 로그에서 고정 ID별 claim 결과와 `SELECT count(*) FROM plans WHERE user_id IS NULL = 0`을
+   확인한다. 스크립트 전체는 한 트랜잭션이며 다시 실행해도 행을 중복 생성하지 않는다.
+3. 두 번째 배포에서 BOOT_TASK를 `none`으로 되돌리고 **별도 마이그레이션**으로 NOT NULL을
+   건다. 이 배포가 끝나기 전에는 claim 완료라고 기록하지 않는다.
+
+제외할 합성 자료는 제목이나 본문 비교로 고르지 않는다. 미리 검토한 plan/task의 고정 ID
+목록만 사용한다. 로그에는 사용자 문장이나 비밀번호를 출력하지 않고 ID별 건수와 NULL 건수만
+남긴다.

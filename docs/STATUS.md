@@ -1,6 +1,25 @@
-# T06 project status
+# T07 project status (T06 history retained below)
 
 Updated: 2026-09-03 KST
+
+## 2026-09-03 T07 authentication design review resolved
+
+- Kept the user-selected Access JWT + rotating opaque Refresh architecture, but
+  made row locking and password-change/logout race ordering part of the design.
+- Removed DB-bound CSRF. Protected writes use authentication then `__Host-`
+  double-submit; signup/login use JSON plus Origin checks; refresh authenticates
+  its opaque token before CSRF validation.
+- Exempted `/api/live` from authentication, expanded ownership from single-item
+  guards to collections, aggregates, creation and export, and specified the
+  reflection FK changes required for account deletion.
+- Split T06 data claim and `plans.user_id NOT NULL` into separate deploys.
+- Moved the plan-rule-change API/UI into the pre-study stage and fixed one
+  observation plan ID as the scope of the exact five-day record.
+- Expanded the Argon2 benchmark to concurrent latency and peak RSS, made login
+  lock state transitions explicit, and bounded secret/log absence claims to
+  reproducible scan surfaces.
+- No authentication implementation was started in this review. The concurrently
+  committed T07 acceptance-matrix work was not modified by the design edits.
 
 ## 2026-09-03 handoff written for the academy PC
 
