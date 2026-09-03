@@ -361,9 +361,19 @@ Refresh A → /api/auth/refresh → A 검증 → A.revoked_at 기록(reason=rota
 
   하나의 Refresh 토큰은 **정상적으로 한 번만 쓰인다.**
 
-- **회전은 한 트랜잭션이다.** A 행을 `SELECT ... FOR UPDATE`로 잠근 뒤 active/만료를 다시
-  확인하고 A revoke, B insert, `replaced_by_id` 연결을 함께 commit한다. 잠금 없이 두 요청이
-  A를 동시에 읽으면 B와 C가 둘 다 생기거나 정상 동시 요청을 재사용으로 오판한다.
+- **회전은 한 트랜잭션이다.** A revoke, B insert, `replaced_by_id` 연결을 함께 commit한다.
+  두 요청이 A를 동시에 읽으면 B와 C가 둘 다 생기거나 정상 동시 요청을 재사용으로 오판한다.
+
+  **구현은 `SELECT ... FOR UPDATE`가 아니라 조건부 UPDATE로 했다**(2026-09-03).
+  `UPDATE ... WHERE token_sha256 = :d AND revoked_at IS NULL`의 `rowcount`가 1인 쪽만
+  이긴다. 바꾼 이유는 **SQLite가 `FOR UPDATE`를 무시하기** 때문이다 — 두 요청이 A를 살아
+  있는 것으로 읽고 둘 다 후계를 만들어 계열이 갈라진다. 검사가 그것을 잡아냈다
+  (`test_concurrent_use_of_one_token_yields_exactly_one_successor`). 조건부 UPDATE는 행
+  잠금이 필요 없고 **두 엔진 모두에서 원자적**이라, 검사가 PostgreSQL에서만 의미 있는
+  상태를 벗어난다.
+
+  사용자 행 `FOR UPDATE`는 그대로 둔다. 비밀번호 변경과의 순서를 맞추는 데 필요하고,
+  그건 경쟁이 아니라 직렬화라 SQLite의 쓰기 직렬화로도 같은 결과가 난다.
 - Access의 `sub`는 세션 행의 `user_id`와 반드시 같아야 한다. 이후 권위 있는 사용자 ID는
   JWT 문자열이 아니라 DB 행에서 가져온다.
 - 비밀번호 변경은 사용자 행을 잠근 채 비밀번호 갱신과 전 세션 revoke를 commit한다.

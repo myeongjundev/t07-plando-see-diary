@@ -8,12 +8,13 @@ from flask import g, jsonify, request
 
 from app.api import api
 from app.api.plans import error_response
-from app.auth.cookies import attach_session
-from app.auth.guards import login_required
+from app.auth.cookies import attach_rotated_session, attach_session, clear_session, read_refresh_cookie
+from app.auth.csrf import CSRF_FAILED, NOT_JSON, csrf_matches
+from app.auth.guards import NOT_AUTHENTICATED, login_required
 from app.extensions import db
 from app.models import User
-from app.security.http import check_unauthenticated_request
-from app.services.sessions import open_session
+from app.security.http import check_unauthenticated_request, origin_is_allowed, wants_json
+from app.services.sessions import RefreshRejected, open_session, refresh_is_live, rotate_session
 from app.services.accounts import (
     DUPLICATE_EMAIL,
     AccountValidationError,
@@ -83,6 +84,55 @@ def login():
         access_token=issued.access_token,
         refresh_token=issued.refresh_token,
         csrf_token=issued.csrf_token,
+        refresh_expires_at=issued.session.expires_at,
+    )
+
+
+@api.post("/auth/refresh")
+def refresh():
+    """Spend the refresh cookie and hand back its successor.
+
+    The row is checked before CSRF, which is the reverse of every other
+    state-changing endpoint. The reason is the ordering the design settled on:
+    this is the one request that arrives precisely when the access token has
+    expired, so it cannot be behind @login_required, and refusing it on CSRF
+    before knowing whether the refresh credential is even valid would answer a
+    replayed token and an unauthenticated caller differently.
+    """
+    if not wants_json():
+        return error_response(NOT_JSON, status=415)
+    if not origin_is_allowed():
+        return error_response(CSRF_FAILED, status=403)
+
+    token = read_refresh_cookie(request)
+    if not token:
+        return error_response(NOT_AUTHENTICATED, status=401)
+
+    # Read-only, and before the CSRF check so that a bad token and a missing
+    # header cannot be told apart by which error comes back first.
+    if not refresh_is_live(token):
+        response = error_response(NOT_AUTHENTICATED, status=401)
+        return clear_session(response[0]), response[1]
+
+    if not csrf_matches():
+        # Refused before anything is spent. Rotating first and rejecting after
+        # would let a cross-site request burn the session it was not allowed to
+        # use -- a logout the attacker cannot read but can certainly cause.
+        return error_response(CSRF_FAILED, status=403)
+
+    try:
+        issued = rotate_session(token)
+    except RefreshRejected:
+        # One answer for unknown, spent, expired and idled-out. Telling them
+        # apart would say which half of a stolen pair is still worth something.
+        # Step 14 adds family revocation behind the `reused` flag.
+        response = error_response(NOT_AUTHENTICATED, status=401)
+        return clear_session(response[0]), response[1]
+
+    return attach_rotated_session(
+        jsonify({"ok": True}),
+        access_token=issued.access_token,
+        refresh_token=issued.refresh_token,
         refresh_expires_at=issued.session.expires_at,
     )
 

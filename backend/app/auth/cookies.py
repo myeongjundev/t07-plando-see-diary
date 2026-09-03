@@ -77,6 +77,20 @@ def attach_session(response: Response, *, access_token: str, refresh_token: str,
     return response
 
 
+def attach_rotated_session(response: Response, *, access_token: str, refresh_token: str,
+                           refresh_expires_at: datetime) -> Response:
+    """Replace the two credentials after a rotation, leaving the CSRF value alone.
+
+    Rewriting the CSRF cookie here would break the request that is in flight in
+    another tab: it read the old value into a header before this response
+    landed. The value is not a credential, and its lifetime is the login.
+    """
+    _set(response, ACCESS_COOKIE, access_token, http_only=True, same_site="Lax", path="/", expires=None)
+    _set(response, REFRESH_COOKIE, refresh_token, http_only=True, same_site="Strict",
+         path=REFRESH_PATH, expires=refresh_expires_at)
+    return response
+
+
 def clear_session(response: Response) -> Response:
     """Remove all three, with the attributes they were set with.
 
