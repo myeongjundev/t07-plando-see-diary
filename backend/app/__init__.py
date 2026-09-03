@@ -9,6 +9,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.config import Config, database_url
 from app.extensions import db, migrate
+from app.security import passwords
 
 
 def create_app(test_config: dict | None = None) -> Flask:
@@ -27,6 +28,12 @@ def create_app(test_config: dict | None = None) -> Flask:
 
     db.init_app(app)
     migrate.init_app(app, db)
+
+    # Build the hasher and its dummy hash now rather than on the first login.
+    # Lazily, the first request against an unknown address would pay for a hash
+    # and a verify while every later one pays for a verify -- leaking, exactly
+    # once, the difference the dummy exists to erase (T07-C99).
+    passwords.warm()
 
     from app.api import api
     from app import models  # noqa: F401

@@ -8,6 +8,7 @@ version = "0.1.0"
 description = "Flask API for the T06 Plan-Do-See diary"
 requires-python = ">=3.11"
 dependencies = [
+  "argon2-cffi>=25.1,<26",
   "Flask>=3.1,<4",
   "Flask-Migrate>=4.1,<5",
   "Flask-SQLAlchemy>=3.1,<4",
@@ -22,10 +23,11 @@ dev = [
   "pytest-cov>=6,<8",
   "jsonschema[format]>=4.23,<5",
 ]
-# Candidates for the T07 password-hashing decision. Temporary: the one that wins
-# the measurement moves up into dependencies and this extra is deleted.
+# Losing candidates for the T07 password-hashing decision, kept only so the
+# benchmark can still produce the comparison table that justifies the winner.
+# argon2-cffi has moved up into dependencies; this extra goes when the
+# measurement is recorded and BOOT_TASK comes out.
 bench = [
-  "argon2-cffi>=25.1,<26",
   "bcrypt>=5,<6",
 ]
 

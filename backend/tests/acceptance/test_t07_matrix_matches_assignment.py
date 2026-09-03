@@ -30,6 +30,8 @@ ROW = re.compile(r"^\| (T07-C\d+) \| (.+?) \| (.+?) \| (.+?) \|$", re.M)
 # mentions the three tests in this file, and counting those as "planned" would
 # arm the guard against itself the moment it was written.
 TEST_NAME = re.compile(r"`(test_c\d+[a-z0-9_]*)`")
+# "**구현 상태: 구현 진행 중**" -- the one line that arms the coverage check.
+STATUS_LINE = re.compile(r"^\*\*구현 상태: (.+?)\*\*$", re.M)
 
 
 def _read(path: Path) -> str:
@@ -63,22 +65,53 @@ def test_matrix_quotes_each_criterion_verbatim(official, matrix):
     assert not drifted, drifted
 
 
-def test_planned_test_names_exist_once_they_are_written():
-    """Every `test_...` the matrix promises must be a real test.
+def _written_criterion_tests() -> set[str]:
+    written: set[str] = set()
+    for path in (ROOT / "backend" / "tests").rglob("test_*.py"):
+        written |= set(re.findall(r"^def (test_c\d[a-z0-9_]*)", path.read_text(encoding="utf-8"), re.M))
+    return written
 
-    Skipped while the promises are still all promises: T07 has no tests yet, and
-    a failing guard on day one would just get muted. It arms itself as soon as
-    one of the named tests appears, so the matrix cannot drift away from the
-    suite while the suite is being written.
+
+def test_no_criterion_test_exists_that_the_matrix_does_not_name():
+    """A `test_c…` in the suite must be one the matrix asked for.
+
+    This is the direction that matters while the suite is being written. It
+    catches the two ways the two documents drift apart day to day: a test
+    renamed without updating the matrix, and a test written against a criterion
+    the matrix maps somewhere else. The opposite direction -- every promise
+    kept -- can only be true at the end, and is checked below.
     """
     planned = set(TEST_NAME.findall(_read(MATRIX)))
     assert planned, "the matrix names no tests -- the format changed"
+    orphans = _written_criterion_tests() - planned
+    assert not orphans, (
+        f"these criterion tests are not in docs/T07-ACCEPTANCE-MATRIX.md: {sorted(orphans)}. "
+        "Add the row, or rename the test to the one the matrix already names."
+    )
 
-    written: set[str] = set()
-    for path in (ROOT / "backend" / "tests").rglob("test_*.py"):
-        written |= set(re.findall(r"^def (test_[a-z0-9_]+)", path.read_text(encoding="utf-8"), re.M))
 
-    if not planned & written:
-        pytest.skip(f"none of the {len(planned)} planned T07 tests are written yet")
+def test_every_test_the_matrix_promises_exists():
+    """The full-coverage check, armed by the matrix declaring itself done.
 
-    assert not planned - written, sorted(planned - written)
+    Demanding all 46 names the moment the first one is written would fail for
+    the whole of the implementation, and a test that is red for weeks is a test
+    that gets muted. So the matrix's own status line is the switch: while it
+    says 구현 진행 중 this reports what is left, and the day it says 구현 완료
+    the check becomes binding.
+
+    The switch lives in the document rather than in this file so that the person
+    declaring the work finished is the person editing the document that says so.
+    """
+    text = _read(MATRIX)
+    planned = set(TEST_NAME.findall(text))
+    missing = sorted(planned - _written_criterion_tests())
+
+    # Anchored to the status line, not to the words appearing anywhere: the
+    # paragraph explaining the switch necessarily quotes the value that flips it.
+    status = STATUS_LINE.search(text)
+    assert status, "the matrix has no 구현 상태 line -- the switch cannot be read"
+    if status.group(1).strip() != "구현 완료":
+        if missing:
+            pytest.skip(f"{len(planned) - len(missing)}/{len(planned)} written; {len(missing)} to go")
+        return
+    assert not missing, missing

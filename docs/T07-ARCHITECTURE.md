@@ -80,6 +80,11 @@ NOT NULL이 깨뜨릴 상대가 없다.
   프로세스 peak RSS**를 같이 잰다. 500ms는 목표이지, OOM 위험을 무시하고 가장 큰 `m`을
   고르라는 규칙이 아니다.
 - 결과는 `docs/T07-EVIDENCE/00-hash-bench-render.md`, 확정값은 이 표에 채운다.
+- **값이 들어갈 자리는 이미 코드에 있다.** `app/security/passwords.py`가 매개변수를
+  환경변수 `ARGON2_TIME_COST` · `ARGON2_MEMORY_KIB` · `ARGON2_PARALLELISM`에서 읽고,
+  없으면 OWASP 최소값으로 돈다. 측정이 끝나면 `render.yaml` 세 줄이 바뀌고 코드는
+  그대로다. 매개변수를 올려도 기존 계정이 잠기지 않는다 — 로그인 때
+  `check_needs_rehash`로 옛 해시를 알아보고 그 자리에서 다시 만든다.
 
 ### 하이브리드를 고른 이유 — 그리고 그 대가
 
