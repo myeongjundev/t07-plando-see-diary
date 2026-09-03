@@ -10,7 +10,7 @@ from app import create_app
 from app.extensions import db
 from app.models import ExecutionLog, Plan
 from conftest import browser_for, copy_session
-from legacy_rows import LEGACY_PLAN, LEGACY_TASK, seed_legacy_plan_and_task
+from legacy_rows import LEGACY_PLAN, LEGACY_TASK, PRE_CLAIM_REVISION, seed_legacy_plan_and_task
 from test_card2_tasks import create_plan
 from test_card3_executions import LOG
 from test_card4_see import NEXT, REFLECTION
@@ -41,8 +41,10 @@ def test_card4_upgrade_preserves_logs_and_concurrent_next_plan_is_single(tmp_pat
             db.session.commit()
             log_id = db.session.scalar(select(ExecutionLog.id))
 
-            upgrade(directory=migrations)
-            upgrade(directory=migrations)  # Idempotent.
+            # Stops before the NOT NULL migration: these rows have no owner yet,
+            # and that migration refuses to apply over them by design.
+            upgrade(directory=migrations, revision=PRE_CLAIM_REVISION)
+            upgrade(directory=migrations, revision=PRE_CLAIM_REVISION)  # Idempotent.
 
             carried = db.session.get(ExecutionLog, log_id)
             assert carried is not None

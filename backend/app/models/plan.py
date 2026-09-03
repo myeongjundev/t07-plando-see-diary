@@ -30,11 +30,13 @@ class Plan(db.Model):
     # decide who owns them by joining through here rather than carrying a copy,
     # so there is never a second answer to disagree with (design section 2).
     #
-    # Nullable for now. The T06 rows predate accounts, and NOT NULL is applied
-    # in a later deploy once claim_t06_data has given them an owner -- the
-    # migration and the claim cannot ride the same boot.
-    user_id: Mapped[str | None] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True
+    # Required. It arrived nullable, because the T06 rows predate accounts, and
+    # was tightened in the deploy after claim_t06_data gave them an owner --
+    # the migration and the claim cannot ride the same boot. A plan with no
+    # owner is invisible to every scoped query, so the database is the right
+    # place to make that state unrepresentable rather than merely unusual.
+    user_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
     title: Mapped[str] = mapped_column(String(160), nullable=False)
     start_date: Mapped[date] = mapped_column(Date, nullable=False)

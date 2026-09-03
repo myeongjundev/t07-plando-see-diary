@@ -7,7 +7,7 @@ from app import create_app
 from app.extensions import db
 from app.models import Plan, Task
 from conftest import browser_for
-from legacy_rows import LEGACY_PLAN, LEGACY_TASK, seed_legacy_plan_and_task
+from legacy_rows import LEGACY_PLAN, LEGACY_TASK, PRE_CLAIM_REVISION, seed_legacy_plan_and_task
 from test_card2_tasks import create_plan, create_task
 from test_card3_executions import KEY, LOG
 
@@ -30,8 +30,10 @@ def test_card3_upgrade_preserves_card2_data_and_is_repeatable(tmp_path):
             # Written with the columns that revision has, so the rows genuinely
             # predate everything the later migrations add.
             seed_legacy_plan_and_task()
-            upgrade(directory=migrations)
-            upgrade(directory=migrations)  # Idempotent.
+            # Stops before the NOT NULL migration: these rows have no owner yet,
+            # and that migration refuses to apply over them by design.
+            upgrade(directory=migrations, revision=PRE_CLAIM_REVISION)
+            upgrade(directory=migrations, revision=PRE_CLAIM_REVISION)  # Idempotent.
 
             plan = db.session.scalar(select(Plan).where(Plan.id == LEGACY_PLAN["id"]))
             assert plan is not None

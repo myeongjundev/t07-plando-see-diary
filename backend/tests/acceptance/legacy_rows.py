@@ -17,6 +17,12 @@ from sqlalchemy import text
 
 from app.extensions import db
 
+# The last revision at which a plan may have no owner. Everything after it is
+# the deploy that runs claim_t06_data first, so a test holding pre-claim rows
+# upgrades to here and no further -- the NOT NULL migration would, correctly,
+# refuse to apply over them.
+PRE_CLAIM_REVISION = "a1c7d9e40b52"
+
 # Fixed so the assertions can name them. Synthetic, like every fixture here.
 LEGACY_PLAN_ID = "00000000-0000-4000-8000-000000000a01"
 LEGACY_TASK_ID = "00000000-0000-4000-8000-000000000b01"

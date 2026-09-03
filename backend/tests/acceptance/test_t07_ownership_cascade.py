@@ -148,15 +148,15 @@ def test_new_auth_tables_are_present_in_the_mapped_schema():
     assert {"users", "refresh_sessions", "login_attempts", "security_events"} <= set(db.metadata.tables)
 
 
-def test_plans_user_id_is_still_nullable():
-    """NOT NULL belongs to a later deploy, after the claim has run.
+def test_plans_user_id_is_required():
+    """A plan with no owner is unrepresentable, not merely unusual.
 
-    `deploy/start.sh` runs `flask db upgrade` before anything else, so a NOT NULL
-    shipped alongside the claim would be evaluated first and fail on every T06
-    row. If this test ever starts failing, check that the claim already ran on
-    the deployed database before tightening it.
+    It arrived nullable and was tightened once claim_t06_data had given the T06
+    rows an owner. The two could not ship together: `deploy/start.sh` runs
+    `flask db upgrade` before BOOT_TASK, so the NOT NULL would have been
+    evaluated before the claim it depends on.
     """
-    assert db.metadata.tables["plans"].columns["user_id"].nullable is True
+    assert db.metadata.tables["plans"].columns["user_id"].nullable is False
 
 
 def test_migration_head_builds_the_same_tables_and_columns_as_the_models(tmp_path):
