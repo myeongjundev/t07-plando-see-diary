@@ -1,3 +1,5 @@
+import { request } from "./http";
+
 export type Priority = "high" | "medium" | "low";
 
 export interface Plan {
@@ -29,23 +31,6 @@ export interface PlanRevision extends Plan {
   planId: string;
   revisionNumber: number;
   replacedAt: string;
-}
-
-interface ApiErrorBody {
-  error?: { message?: string; details?: Record<string, string> };
-}
-
-async function request<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, {
-    ...init,
-    headers: { "Content-Type": "application/json", ...init?.headers },
-  });
-  const body = (await response.json()) as T & ApiErrorBody;
-  if (!response.ok) {
-    const detail = body.error?.details ? Object.values(body.error.details)[0] : undefined;
-    throw new Error(detail ?? body.error?.message ?? "요청을 처리하지 못했습니다.");
-  }
-  return body;
 }
 
 export async function listPlans(): Promise<Plan[]> {

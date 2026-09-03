@@ -1,3 +1,4 @@
+import { request } from "./http";
 import type { Priority } from "./plans";
 
 export type TaskStatus = "active" | "completed";
@@ -33,23 +34,9 @@ export interface TaskFilters {
   tag?: string;
 }
 
-interface ApiErrorBody {
-  error?: { message?: string; details?: Record<string, string> };
-}
-
-export async function request<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, {
-    ...init,
-    headers: { "Content-Type": "application/json", ...init?.headers },
-  });
-  if (response.status === 204) return undefined as T;
-  const body = (await response.json()) as T & ApiErrorBody;
-  if (!response.ok) {
-    const detail = body.error?.details ? Object.values(body.error.details)[0] : undefined;
-    throw new Error(detail ?? body.error?.message ?? "요청을 처리하지 못했습니다.");
-  }
-  return body;
-}
+// The shared client owns headers, CSRF and the 401 refresh. Re-exported here
+// because every other api module already imports `request` from this one.
+export { request } from "./http";
 
 export async function listTasks(planId: string, filters: TaskFilters): Promise<Task[]> {
   const params = new URLSearchParams();

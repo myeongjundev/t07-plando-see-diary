@@ -371,20 +371,61 @@ h1 {
   color: var(--ink-2);
 }
 
-/* 공개 안내 — 과제 T06-C82. 문구와 위치는 그대로, 톤만 정리합니다. */
-.public-warning {
+/* 계정 줄과 로그인 화면 ─ T07에서 추가.
+   자리는 T06의 공개 경고가 있던 곳을 그대로 쓴다. 그 문구는 더 이상 사실이 아니라
+   지웠고(설계 8절), 머리글 오른쪽은 원래 상태를 알리는 자리였다. */
+
+.page-top-actions {
   display: flex;
+  align-items: center;
   gap: var(--s3);
-  margin: 0;
-  padding: var(--s4);
-  border-left: 3px solid var(--warn-mark);
-  border-radius: 0 var(--r-ctl) var(--r-ctl) 0;
-  background: var(--warn-soft);
-  color: var(--ink-2);
-  font-size: var(--t-sm);
-  font-weight: 400;
-  line-height: 1.6;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
 }
+
+.account-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  font-size: var(--t-sm);
+  color: var(--ink-2);
+}
+
+.account-email {
+  max-width: 16rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.auth-page {
+  max-width: 30rem;
+}
+
+.auth-panel form {
+  display: grid;
+  gap: var(--s4);
+}
+
+.auth-panel .field-hint {
+  margin: calc(var(--s3) * -1) 0 0;
+  font-size: var(--t-sm);
+  color: var(--ink-2);
+}
+
+.auth-switch {
+  margin: var(--s4) 0 0;
+  font-size: var(--t-sm);
+  color: var(--ink-2);
+}
+
+.route-checking {
+  display: grid;
+  place-items: center;
+  min-height: 60vh;
+  color: var(--ink-2);
+}
+
 
 /* ── 패널 ────────────────────────────────────────────────────────────── */
 

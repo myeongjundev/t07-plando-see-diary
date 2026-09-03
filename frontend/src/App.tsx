@@ -12,6 +12,7 @@ import TaskPanel from "./features/tasks/TaskPanel";
 import SeePanel from "./features/see/SeePanel";
 import ExportPanel from "./features/export/ExportPanel";
 import ThemeToggle from "./ThemeToggle";
+import AccountBar from "./auth/AccountBar";
 import PlanGauge from "./features/plans/PlanGauge";
 import { getSummary, Summary } from "./api/reflections";
 import useActiveStep from "./useActiveStep";
@@ -203,12 +204,11 @@ function App() {
           <h1>플랜두씨 다이어리</h1>
           <p>계획한 나와 실제의 차이를 기록하고, 다음 계획을 더 정확하게 만듭니다.</p>
         </header>
-        <ThemeToggle />
+        <div className="page-top-actions">
+          <AccountBar />
+          <ThemeToggle />
+        </div>
       </div>
-
-      <aside className="public-warning" role="note">
-        지금은 로그인이 없어 링크를 아는 사람은 누구나 볼 수 있습니다. 남이 봐도 괜찮은 내용만 넣으세요
-      </aside>
 
       <div className="workflow-bar">
         {selectedPlan && (

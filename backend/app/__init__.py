@@ -11,6 +11,11 @@ from app.config import Config, database_url
 from app.extensions import db, migrate
 from app.security import passwords, tokens
 
+# The paths the single-page app owns. The shell is served at each of them, and
+# each is no-store: index.html carries the login state's starting point, and a
+# cached copy of it is a copy of somebody's session boundary.
+SPA_ROUTES = ("/", "/login", "/signup", "/app")
+
 
 def create_app(test_config: dict | None = None) -> Flask:
     app = Flask(__name__, static_folder=None)
@@ -47,7 +52,21 @@ def create_app(test_config: dict | None = None) -> Flask:
     app.register_blueprint(api)
 
     @app.get("/")
+    @app.get("/login")
+    @app.get("/signup")
+    @app.get("/app")
     def frontend():
+        """Serve index.html so a direct visit to a client route works.
+
+        Reloading on /app, or opening /login from a link, is a plain GET the
+        server knows nothing about -- client routing lives in the bundle, and
+        without these the browser would get the API's 404 instead of the app.
+
+        Listed rather than matched by a catch-all. A catch-all answers a
+        mistyped /api/plnas with the shell and a 200, which turns a clear 404
+        into a blank screen, and it would keep doing that for every route added
+        later that nobody remembered to exclude.
+        """
         return send_from_directory(app.config["STATIC_DIST"], "index.html")
 
     @app.get("/assets/<path:filename>")
@@ -63,7 +82,7 @@ def create_app(test_config: dict | None = None) -> Flask:
             "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; "
             "connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'"
         )
-        if request.path.startswith("/api/") or request.path == "/":
+        if request.path.startswith("/api/") or request.path in SPA_ROUTES:
             response.headers["Cache-Control"] = "no-store"
         return response
 

@@ -152,8 +152,12 @@ OS 시트를 잃는 건 값으로 치렀습니다.
 
 ```powershell
 backend/.venv/Scripts/python.exe -m pytest backend/tests
+npm --prefix frontend test
 npm --prefix frontend run build
 ```
+
+T07에서 프런트엔드 자동 검사(vitest)가 붙었습니다. 세션 만료 복구와 라우트 관문은
+브라우저 안에만 있어서 pytest가 볼 수 없기 때문입니다.
 
 ## 로컬 실행
 

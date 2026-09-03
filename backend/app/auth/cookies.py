@@ -23,10 +23,9 @@ without the other two.
 """
 from __future__ import annotations
 
-import os
 from datetime import datetime
 
-from flask import Request, Response
+from flask import Request, Response, current_app
 
 ACCESS_COOKIE = "__Host-pds_access"
 REFRESH_COOKIE = "__Secure-pds_refresh"
@@ -37,14 +36,19 @@ REFRESH_PATH = "/api/auth"
 
 
 def secure_cookies() -> bool:
-    """Whether to set the Secure attribute.
+    """Whether to set the Secure attribute. On everywhere except the test client.
 
-    Both prefixes and Secure require HTTPS, and the test client and the local
-    dev server are HTTP. Keyed to REQUIRE_POSTGRES, which is the flag that
-    already means "this is the deployed configuration", so there is one switch
-    rather than two that can disagree.
+    It used to be keyed to REQUIRE_POSTGRES, which meant local development ran
+    without it -- and a browser rejects a `__Host-` cookie that has no Secure
+    attribute, whatever the scheme. Every login in a real dev browser silently
+    stored nothing. The test client is the only caller that needs it off, and
+    it is off there because Werkzeug's cookie jar will not send a Secure cookie
+    over the http:// the tests use.
+
+    Browsers make an exception for http://localhost and accept Secure cookies
+    there, so the dev server works with this on.
     """
-    return os.getenv("REQUIRE_POSTGRES", "0") == "1"
+    return not current_app.config.get("TESTING", False)
 
 
 def _set(response: Response, name: str, value: str, *, http_only: bool, same_site: str,

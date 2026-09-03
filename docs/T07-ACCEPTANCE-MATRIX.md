@@ -58,7 +58,7 @@ T06의 `tools/generate_verification.py`가 하던 일을 검사 쪽으로 옮긴
 | T07-C94 | 가입 화면에서 새 계정을 만들 수 있다. | `/signup`에서 계정 생성 | **자동** · `test_c94_signup_creates_account` · 증거 `01` |
 | T07-C95 | 만든 계정으로 로그인할 수 있다. | 그 계정으로 `/login` | **자동** · `test_c95_login_with_created_account` · 증거 `01` |
 | T07-C96 | 로그아웃할 수 있다. | 로그아웃 누르기 | **자동** · `test_c96_logout_succeeds` · 증거 `01` |
-| T07-C97 | 로그인하지 않은 채로 내 자료 화면 주소를 열면 자료 대신 로그인 화면이 나온다. | 시크릿 창에서 `/app` 직접 열기 | **자동** · `test_c97_app_route_redirects_when_anonymous` · 배포본 |
+| T07-C97 | 로그인하지 않은 채로 내 자료 화면 주소를 열면 자료 대신 로그인 화면이 나온다. | 시크릿 창에서 `/app` 직접 열기 | **자동** · `test_c97_app_route_redirects_when_anonymous` · 배포본. 관문 자체는 `frontend/src/auth/routes.test.tsx`가 이미 검사한다 |
 | T07-C98 | 같은 아이디(또는 이메일)로 두 번 가입되지 않는다. | 같은 이메일로 가입 두 번, 그리고 **동시에** 네 번 | **자동** · `test_c98_duplicate_signup_rejected` · `test_c98_duplicate_is_decided_by_the_database_not_a_prior_read` · 증거 `01` |
 | T07-C99 | 아이디는 맞고 비밀번호만 틀렸을 때와, 아이디 자체가 없을 때의 안내 문구가 같다. | 두 경우로 로그인 시도 | **자동** · `test_c99_same_message_and_status_for_both` · `test_c99_timing_does_not_leak_existence` · 증거 `01` |
 | T07-C100 | 6번에서 만든 다이어리에 이어 붙였고, 6번에 넣어 둔 내 자료가 내 계정으로 옮겨져 있다. | `claim_t06_data` 실행 후 주인 없는 행 세기 | **자동** · `test_c100_claim_leaves_no_orphan_plan` · 배포본 |
@@ -177,7 +177,7 @@ T06의 `tools/generate_verification.py`가 하던 일을 검사 쪽으로 옮긴
 
 | ID | 통과 기준 | 확인하는 행동 | 자동 검사 · 증거 |
 | --- | --- | --- | --- |
-| T07-C03 | 결과물 주소의 첫 화면은 로그인 화면이고, 심사하는 사람이 계정을 만들지 않아도 그 화면까지는 열린다. 로그인 뒤에 보이는 내 기록은 공개되지 않는다. | 시크릿 창에서 루트 주소 | **자동** · `test_c03_root_serves_login_without_auth` · 배포본 |
+| T07-C03 | 결과물 주소의 첫 화면은 로그인 화면이고, 심사하는 사람이 계정을 만들지 않아도 그 화면까지는 열린다. 로그인 뒤에 보이는 내 기록은 공개되지 않는다. | 시크릿 창에서 루트 주소 | **자동** · `test_c03_root_serves_login_without_auth` · 배포본. 화면이 계정 없이 열리는 것은 `frontend/src/auth/routes.test.tsx`, 서버가 그 주소에 셸을 주는 것은 `backend/tests/acceptance/test_t07_spa_routes.py` |
 | T07-C39 | 짧은 확인 방법에 ① 어디로 가나요, ② 세 단계 안에 무엇을 하나요, ③ 무엇이 보이면 통과인가요, ④ 안 될 때는 무엇이 보이나요가 각각 나뉘어 적혀 있다. | `SUBMISSION.md`의 확인 4줄 | 제출문 |
 | T07-C40 | 제출문에 ① AI에게 맡긴 일, ② 내가 직접 판단한 일, ③ AI 제안을 따르지 않은 일(없다면 왜 없었는지)이 각각 나뉘어 적혀 있다. | `SUBMISSION.md`의 판단 3줄 | 제출문 — **본인이 쓴다** |
 | T07-C46 | 공개 화면·소스·제출물 어디에도 비밀값 원문이 남아 있지 않다. | 워킹트리·프런트 빌드·Git 이력 전체 | **스캔** · `audit_secrets.py` 0건 |

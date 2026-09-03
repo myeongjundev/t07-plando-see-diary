@@ -419,6 +419,12 @@ C111에 적을 한 문장: **"Access 토큰은 10분, 로그인 세션은 48시�
 
 전부 `Secure`. 토큰은 **쿼리스트링·경로에 절대 넣지 않는다**(C112).
 
+`Secure`를 끄는 곳은 **테스트 클라이언트 하나뿐**이다(`TESTING` 기준). 처음에는
+`REQUIRE_POSTGRES`로 갈랐는데, 그러면 로컬 개발에서 `Secure`가 빠지고 —
+브라우저는 `Secure` 없는 `__Host-` 쿠키를 **스킴과 무관하게 거부한다.** 개발 중
+로그인이 아무 말 없이 아무것도 저장하지 않았다. 브라우저는 `http://localhost`에
+한해 `Secure` 쿠키를 받아 주므로, 켜 둔 채로 개발 서버가 정상 동작한다.
+
 **접두사 판단.** `__Host-`는 `Path=/`를 강제하므로 refresh 쿠키에는 쓸 수 없다 — 경로를
 좁히는 쪽이 더 값어치 있다고 보고 `__Secure-`를 골랐다. 접두사가 원래 막는 위협은
 형제 서브도메인의 쿠키 덮어쓰기인데, **`onrender.com`은 Public Suffix List에 등재돼
@@ -599,17 +605,28 @@ CSRF 토큰 원문 · JWT_SECRET · Authorization 헤더 원문 · 원본 IP
 - `/login`, `/signup` — 로그인하지 않아도 열린다 (C03: 심사자가 계정 없이 여기까지는 봄)
 - `/app` — 자료 화면. 로그인 안 했으면 **`/login`으로 보낸다** (C97)
 - Flask에 SPA 폴백 라우트 추가: `/login`·`/signup`·`/app` 직접 접근 시 `index.html`
-- `/` 는 `/login`으로 (로그인 상태면 `/app`)
+- `/` 는 `/app`으로 보내고, 관문이 다시 판단한다 — 로그인 안 했으면 `/login`,
+  했으면 그대로. 리다이렉트 규칙을 두 군데 두지 않으려고 이렇게 했다
+
+Flask 쪽 폴백은 **catch-all이 아니라 목록**이다(`SPA_ROUTES`). catch-all은 오타 난
+`/api/plnas`에도 셸과 200을 돌려주고, 그러면 명확한 404가 빈 화면으로 바뀐다.
+검사: `backend/tests/acceptance/test_t07_spa_routes.py`.
 
 **Access 만료(10분)를 사용자가 느끼면 안 된다.** API가 401을 주면 프런트가 자동으로
 `/api/auth/refresh`를 한 번 호출하고 원 요청을 재시도한다. 재시도도 401이면 그때
 `/login`으로 보낸다. **재귀하지 않도록** refresh 자체의 401은 재시도 대상에서 뺀다.
 
-여기에는 직렬화가 필수다. 한 탭에서는 module-level single-flight Promise 하나만 refresh를
-수행하고 나머지 요청은 그것을 기다린다. 여러 탭은 같은 이름의 Web Lock 안에서 **원 요청을
-먼저 다시 보내** 다른 탭이 이미 공유 쿠키를 갱신했는지 확인하고, 그래도 401일 때만 refresh한다.
-Web Locks가 없는 브라우저의 fallback은 BroadcastChannel로 진행 중 상태를 공유한다. 인증값은
-어느 경우에도 storage나 메시지에 싣지 않는다. 동시 401 5건과 두 탭 시나리오를 자동 검사한다.
+여기에는 직렬화가 필수다. **구현은 설계가 나눠 놓았던 둘을 하나로 합쳤다.** 임계 구역을
+`Web Lock` 안에 두고, 그 안에서 **원 요청을 먼저 다시 보낸다.** 다른 탭이든 같은 탭의
+다른 요청이든 이미 갱신했으면 그 재시도가 200으로 돌아오고, refresh는 아예 일어나지 않는다.
+따로 single-flight Promise를 둘 필요가 없어졌다 — 재확인이 그 일을 대신한다.
+탭 안 순서는 module-level 큐가, 탭 사이는 Web Lock이 잡는다.
+Web Locks가 없는 브라우저의 fallback은 BroadcastChannel로 진행 중 상태를 공유한다.
+인증값은 어느 경우에도 storage나 메시지에 싣지 않는다.
+
+자동 검사는 `frontend/src/api/http.test.ts`. 동시 401 5건에서 **refresh 1회**, 재확인
+5회까지 개수로 못 박았고, 두 탭은 모듈 인스턴스 둘이 같은 Web Lock을 나눠 갖는 모양으로
+재현한다. refresh 자신의 401을 재시도하지 않는 것도 여기서 본다.
 
 회전 응답이 네트워크에서 유실된 뒤 옛 Refresh를 재시도하면 엄격한 재사용 탐지가 계열을
 끊는다. B 원문을 DB에 저장하지 않는 현재 구조에서는 안전하게 같은 응답을 재전송할 수 없다.
@@ -775,7 +792,7 @@ T06 문서는 그대로 둔다. 지우면 "이어 붙였다"(C100)의 근거가 
 | 6 | 로그아웃 · 폐기와 Refresh 경합 | C109·C110·C114 |
 | 7 | 단건·목록·집계·생성·export 사용자 범위 | C116~C126, A export에 B 자료 0 |
 | 8 | `__Host-` 이중 제출 CSRF + JSON·Origin | 정상/없음/불일치/JSON 아님/교차 출처 |
-| 9 | 프런트 라우팅 · 로그인/가입 · single-flight/교차 탭 refresh | C03·C97, 동시 401 5건에서 refresh 1회 |
+| 9 | 프런트 라우팅 · 로그인/가입 · single-flight/교차 탭 refresh | **끝남** — vitest 19개, SPA 폴백 13개 |
 | 10 | 규칙 변경 저장·조회·1·2일차 기록 선택 UI | C09~C12를 배포 첫날부터 수행 가능 |
 | 11 | T06 자료 claim 배포 | 고정 ID별 결과, 주인 없는 행 0 |
 | 12 | 별도 마이그레이션으로 `user_id` NOT NULL | 재실행 후에도 주인 없는 행 0 |

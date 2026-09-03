@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { sendWithSession } from "../../api/http";
 
 export default function ExportPanel() {
   const [busy, setBusy] = useState(false);
@@ -7,7 +8,9 @@ export default function ExportPanel() {
     if (busy) return;
     setBusy(true); setMessage("");
     try {
-      const response = await fetch("/api/export");
+      // Through the session client: an export started ten minutes into a session
+      // must refresh rather than download an error page.
+      const response = await sendWithSession("/api/export");
       if (!response.ok) throw new Error("내보내지 못했습니다. 잠시 후 다시 시도하세요.");
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
