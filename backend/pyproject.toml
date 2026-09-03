@@ -9,6 +9,11 @@ description = "Flask API for the T06 Plan-Do-See diary"
 requires-python = ">=3.11"
 dependencies = [
   "argon2-cffi>=25.1,<26",
+  # Access tokens. Hand-rolling HS256 is thirty lines, and the bugs it invites
+  # -- accepting the token's own `alg`, comparing signatures with ==, forgetting
+  # to require `exp` -- are the ones that get written up. Not the place to save
+  # a dependency.
+  "PyJWT>=2.10,<3",
   "Flask>=3.1,<4",
   "Flask-Migrate>=4.1,<5",
   "Flask-SQLAlchemy>=3.1,<4",

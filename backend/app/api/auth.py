@@ -4,11 +4,16 @@ Session issuance is not wired up yet -- that is step 4, and it lands on the
 `login` handler here. Until then login answers whether the credentials are
 right and sets nothing.
 """
-from flask import jsonify, request
+from flask import g, jsonify, request
 
 from app.api import api
 from app.api.plans import error_response
+from app.auth.cookies import attach_session
+from app.auth.guards import login_required
+from app.extensions import db
+from app.models import User
 from app.security.http import check_unauthenticated_request
+from app.services.sessions import open_session
 from app.services.accounts import (
     DUPLICATE_EMAIL,
     AccountValidationError,
@@ -67,5 +72,31 @@ def login():
     if user is None:
         return error_response(INVALID_CREDENTIALS, status=401)
 
-    # Step 4 issues the session cookies here.
+    issued = open_session(user)
+    response = jsonify({"user": serialize_user(user)})
+    # The three tokens exist as plaintext only between open_session and here.
+    # Nothing returns them in the body: the access and refresh values are
+    # HttpOnly, and putting them in JSON as well would hand script the copies
+    # HttpOnly exists to withhold.
+    return attach_session(
+        response,
+        access_token=issued.access_token,
+        refresh_token=issued.refresh_token,
+        csrf_token=issued.csrf_token,
+        refresh_expires_at=issued.session.expires_at,
+    )
+
+
+@api.get("/auth/me")
+@login_required
+def me():
+    """Who the browser is, for the frontend's route gate.
+
+    The frontend never sees a token. It asks this, and the answer is derived
+    from cookies it cannot read -- which is why the gate cannot be talked out of
+    a redirect by editing local state.
+    """
+    user = db.session.get(User, g.current_user)
+    if user is None:  # pragma: no cover - a live session whose account is gone
+        return error_response("로그인이 필요합니다.", status=401)
     return jsonify({"user": serialize_user(user)})

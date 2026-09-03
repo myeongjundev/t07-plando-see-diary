@@ -112,6 +112,13 @@ def test_installed_production_app_uses_explicit_frontend_path(tmp_path, monkeypa
     with pytest.raises(RuntimeError, match='frontend build is missing'):
         create_app(production)
     (tmp_path / 'index.html').write_text('<html>synthetic production build</html>', encoding='utf-8')
+    # T07 adds a second precondition: a production process without a signing key
+    # would mint tokens with a per-process one and log everyone out on the next
+    # restart, which on Render Free is several times a day.
+    monkeypatch.delenv('JWT_SECRET', raising=False)
+    with pytest.raises(RuntimeError, match='JWT_SECRET'):
+        create_app(production)
+    monkeypatch.setenv('JWT_SECRET', 'synthetic-production-signing-key-not-a-real-secret')
     assets = tmp_path / 'assets'
     assets.mkdir()
     (assets / 'main.js').write_text('/* synthetic bundle */', encoding='utf-8')

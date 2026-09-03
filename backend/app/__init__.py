@@ -9,7 +9,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.config import Config, database_url
 from app.extensions import db, migrate
-from app.security import passwords
+from app.security import passwords, tokens
 
 
 def create_app(test_config: dict | None = None) -> Flask:
@@ -25,6 +25,12 @@ def create_app(test_config: dict | None = None) -> Flask:
         raise RuntimeError("Production requires a PostgreSQL DATABASE_URL.")
     if app.config["REQUIRE_POSTGRES"] and not (Path(app.config["STATIC_DIST"]) / "index.html").is_file():
         raise RuntimeError("Production frontend build is missing; check STATIC_DIST.")
+    if app.config["REQUIRE_POSTGRES"]:
+        # Refuse to boot rather than fall back to a per-process key. The
+        # fallback works until the process restarts -- which Render Free does
+        # every time it wakes -- and then logs everyone out with nothing in the
+        # logs to say why.
+        tokens.require_signing_key()
 
     db.init_app(app)
     migrate.init_app(app, db)
