@@ -210,11 +210,25 @@ def test_concurrent_use_of_one_token_yields_exactly_one_successor(tmp_path, monk
         assert sorted(r.status_code for r in results) == [200, 401]
         with app.app_context():
             rows = db.session.scalars(db.select(RefreshSession)).all()
-            # The original plus exactly one successor.
+            # The original plus exactly one successor: the family did not fork,
+            # which is what step 5 was for.
             assert len(rows) == 2
-            live = [row for row in rows if row.revoked_at is None]
-            assert len(live) == 1
             assert len({row.family_id for row in rows}) == 1
+
+            # And since step 14, nothing is left alive. The loser presented a
+            # token that had already been spent for a successor, and from the
+            # server's side that is indistinguishable from a replay -- so the
+            # family goes, including the successor the winner just received.
+            #
+            # This is the accepted cost of strict detection with no grace
+            # window, written down in design section 11. The successor's
+            # plaintext is not stored, so the same response cannot be replayed
+            # to the loser; the alternatives are keeping a live token the
+            # attacker may also hold, or storing the very thing the design
+            # refuses to store. The frontend serialises refreshes precisely so
+            # a legitimate user does not arrive here.
+            assert sorted(row.revoked_reason for row in rows) == ["reuse", "rotated"]
+            assert all(row.revoked_at is not None for row in rows)
     finally:
         with app.app_context():
             db.session.remove()

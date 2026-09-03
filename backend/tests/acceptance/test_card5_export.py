@@ -119,6 +119,13 @@ def test_installed_production_app_uses_explicit_frontend_path(tmp_path, monkeypa
     with pytest.raises(RuntimeError, match='JWT_SECRET'):
         create_app(production)
     monkeypatch.setenv('JWT_SECRET', 'synthetic-production-signing-key-not-a-real-secret')
+    # And a third: without a stable IP hashing key the login throttle counts
+    # against a value that changes on every restart, so it locks nobody out and
+    # looks like it does. Render Free restarts several times a day.
+    monkeypatch.delenv('IP_HASH_SECRET', raising=False)
+    with pytest.raises(RuntimeError, match='IP_HASH_SECRET'):
+        create_app(production)
+    monkeypatch.setenv('IP_HASH_SECRET', 'synthetic-production-ip-key-not-a-real-secret')
     assets = tmp_path / 'assets'
     assets.mkdir()
     (assets / 'main.js').write_text('/* synthetic bundle */', encoding='utf-8')

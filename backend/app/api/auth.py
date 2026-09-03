@@ -16,13 +16,17 @@ from app.extensions import db
 from app.models import User
 from app.services.ownership import current_session_id, current_user_id
 from app.security.http import check_unauthenticated_request, origin_is_allowed, wants_json
+from app.services import security_events as events
 from app.services.sessions import (
     LOGOUT,
+    REUSE,
     RefreshRejected,
     end_session,
     open_session,
     refresh_is_live,
+    revoke_family,
     rotate_session,
+    spent_by_rotation,
 )
 from app.services.accounts import (
     DUPLICATE_EMAIL,
@@ -37,6 +41,33 @@ from app.services.accounts import (
 # and a password that is wrong are the same event as far as the caller is
 # concerned, and telling them apart is how an address list gets built.
 INVALID_CREDENTIALS = "이메일 또는 비밀번호가 올바르지 않습니다."
+
+
+def revoke_reused_family(family_id: str, user_id: str | None) -> None:
+    """Kill every session descended from a login whose token was replayed.
+
+    A token already spent for a successor has come back, so it was copied
+    between then and now. There is no way to tell whether the request in hand is
+    the thief or the victim, so both are cut off.
+
+    Revoking only the replayed row would leave the successor -- the token the
+    attacker walked away with -- alive and working, which is the failure
+    rotation exists to close. The cost is that a legitimate user has to log in
+    again; that is much better than a session quietly shared with someone else
+    (design section 4, and the accepted limitation in section 11).
+
+    Two callers, because a replay can arrive on either side of the rotation
+    lock, and both are the same event.
+    """
+    revoke_family(family_id, REUSE)
+    events.record(
+        events.REFRESH_TOKEN_REUSE_DETECTED,
+        events.DETECTED,
+        user_id=user_id,
+        detail={"familyId": family_id},
+        commit=False,
+    )
+    db.session.commit()
 
 
 @api.post("/auth/signup")
@@ -56,12 +87,19 @@ def signup():
             # refuse duplicates (T07-C98) and hide that the address exists, and
             # the criterion asks for the refusal. The enumeration this leaves
             # open is listed in design section 11 rather than papered over.
+            #
+            # The event carries no address. Which one was already taken is the
+            # single interesting fact here and the one that must not be written
+            # down: an audit log full of them is the enumeration list C99 exists
+            # to prevent, sitting in the database.
+            events.record(events.SIGNUP_DUPLICATE, events.FAILURE)
             return error_response(
                 "계정을 만들 수 없습니다.",
                 details={"email": "이미 가입된 이메일입니다."},
                 status=409,
             )
         raise
+    events.record(events.SIGNUP_SUCCESS, events.SUCCESS, user_id=user.id)
     return jsonify({"user": serialize_user(user)}), 201
 
 
@@ -80,9 +118,18 @@ def login():
 
     user = authenticate(credentials)
     if user is None:
+        # No user_id, because there may be no user -- and no address, for the
+        # same reason the duplicate above does not carry one. What the row is
+        # for is the shape of the traffic: how many failures, from which hashed
+        # address, how close together.
+        events.record(events.LOGIN_FAILURE, events.FAILURE)
         return error_response(INVALID_CREDENTIALS, status=401)
 
     issued = open_session(user)
+    events.record(
+        events.LOGIN_SUCCESS, events.SUCCESS,
+        user_id=user.id, session_id=issued.session.id,
+    )
     response = jsonify({"user": serialize_user(user)})
     # The three tokens exist as plaintext only between open_session and here.
     # Nothing returns them in the body: the access and refresh values are
@@ -120,6 +167,17 @@ def refresh():
     # Read-only, and before the CSRF check so that a bad token and a missing
     # header cannot be told apart by which error comes back first.
     if not refresh_is_live(token):
+        # This branch is where a sequential replay lands: a token spent for a
+        # successor some time ago, arriving again. It is not live, so rotation
+        # is never reached, and detection has to happen here or not at all.
+        #
+        # Deliberately before the CSRF check, and answering 401 either way. The
+        # CSRF value survives rotation and is readable, so an attacker holding a
+        # stolen refresh cookie usually holds a matching one; gating detection
+        # on the header would let the case that matters most walk past it.
+        replayed = spent_by_rotation(token)
+        if replayed is not None:
+            revoke_reused_family(replayed.family_id, replayed.user_id)
         response = error_response(NOT_AUTHENTICATED, status=401)
         return clear_session(response[0]), response[1]
 
@@ -131,13 +189,25 @@ def refresh():
 
     try:
         issued = rotate_session(token)
-    except RefreshRejected:
-        # One answer for unknown, spent, expired and idled-out. Telling them
-        # apart would say which half of a stolen pair is still worth something.
-        # Step 14 adds family revocation behind the `reused` flag.
+    except RefreshRejected as rejected:
+        if rejected.reused:
+            # The concurrent version of the same thing: the row was live when
+            # the pre-check read it and had been claimed by the time rotation
+            # tried. The sequential version is handled above.
+            revoke_reused_family(rejected.family_id, rejected.user_id)
+        # One answer for all of them -- unknown, spent, expired, idled out.
+        # Telling them apart would say which half of a stolen pair is still
+        # worth something, and would tell an attacker replaying a token that
+        # their replay is what triggered the revocation.
         response = error_response(NOT_AUTHENTICATED, status=401)
         return clear_session(response[0]), response[1]
 
+    events.record(
+        events.REFRESH_TOKEN_ROTATED,
+        events.SUCCESS,
+        user_id=issued.session.user_id,
+        session_id=issued.session.id,
+    )
     return attach_rotated_session(
         jsonify({"ok": True}),
         access_token=issued.access_token,
@@ -164,7 +234,10 @@ def logout():
     if refusal:
         return error_response(refusal[0], status=refusal[1])
 
-    end_session(current_session_id(), LOGOUT)
+    session_id = current_session_id()
+    user_id = current_user_id()
+    end_session(session_id, LOGOUT)
+    events.record(events.LOGOUT, events.SUCCESS, user_id=user_id, session_id=session_id)
     response = jsonify({"ok": True})
     return clear_session(response)
 

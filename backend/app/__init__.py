@@ -9,7 +9,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.config import Config, database_url
 from app.extensions import db, migrate
-from app.security import passwords, tokens
+from app.security import passwords, redact, tokens
 
 # The paths the single-page app owns. The shell is served at each of them, and
 # each is no-store: index.html carries the login state's starting point, and a
@@ -36,6 +36,11 @@ def create_app(test_config: dict | None = None) -> Flask:
         # every time it wakes -- and then logs everyone out with nothing in the
         # logs to say why.
         tokens.require_signing_key()
+        # Same reasoning, different key. Without a stable IP_HASH_SECRET the
+        # login throttle counts against a value that changes every restart, so
+        # it looks like it works and forgets every attacker the moment Render
+        # Free wakes the instance.
+        redact.require_ip_secret()
 
     db.init_app(app)
     migrate.init_app(app, db)

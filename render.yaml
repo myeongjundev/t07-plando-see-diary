@@ -27,6 +27,13 @@ services:
       # refresh sessions survive and clients recover on their next rotation.
       - key: JWT_SECRET
         generateValue: true
+      # Key for HMAC-hashing client IPs before they are stored. Separate from
+      # JWT_SECRET on purpose: rotating the signing key to invalidate access
+      # tokens must not also reset every login-throttle window, and rotating
+      # this one does reset them -- which is a runbook line, not a surprise.
+      # Raw addresses are never written; a leaked table must not be a visitor log.
+      - key: IP_HASH_SECRET
+        generateValue: true
       # One-off commands on Render Free: the plan has no shell, no SSH, no
       # one-off jobs and no cron, so the only code that ever runs on the
       # instance is this web service. deploy/start.sh reads BOOT_TASK at boot

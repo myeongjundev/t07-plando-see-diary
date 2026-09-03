@@ -92,13 +92,25 @@ def open_session(user: User, *, now: datetime | None = None) -> IssuedSession:
 class RefreshRejected(Exception):
     """The refresh token was unknown, spent, expired, or idled out."""
 
-    def __init__(self, reason: str, *, reused: bool = False) -> None:
+    def __init__(
+        self,
+        reason: str,
+        *,
+        reused: bool = False,
+        family_id: str | None = None,
+        user_id: str | None = None,
+    ) -> None:
         super().__init__(reason)
         self.reason = reason
-        # True when a token that had already been rotated came back. Step 14
-        # turns this into family revocation and a security event; for now the
-        # caller refuses the request and the flag is the seam that says where.
+        # True when a token that had already been rotated came back: the row was
+        # spent for a successor, and here it is again. The endpoint turns this
+        # into family revocation. The family and user ride along because by the
+        # time the caller sees this the row has been expired from the session,
+        # and re-reading it to find out whose family to kill would be a second
+        # chance to read the wrong one.
         self.reused = reused
+        self.family_id = family_id
+        self.user_id = user_id
 
 
 def refresh_is_live(refresh_token: str, *, now: datetime | None = None) -> bool:
@@ -117,6 +129,27 @@ def refresh_is_live(refresh_token: str, *, now: datetime | None = None) -> bool:
     if _aware(session.expires_at) <= now:
         return False
     return _aware(session.last_used_at) + idle_ttl() > now
+
+
+def spent_by_rotation(refresh_token: str) -> RefreshSession | None:
+    """The row for a token that was already exchanged for a successor.
+
+    This is the sequential replay: a token spent minutes ago arriving again.
+    `refresh_is_live` says no to it, and to an unknown token, and to an expired
+    one, all the same way -- which is right for the response and wrong as the
+    only thing that looks at it, because the endpoint would return 401 and never
+    learn that a copy of a spent credential is in circulation.
+
+    Only ROTATED counts. `logout`, `password_change` and `account_delete` mean
+    the session was deliberately ended, and a request arriving just after one of
+    those is a slow tab, not a thief.
+    """
+    session = db.session.scalar(
+        db.select(RefreshSession).where(RefreshSession.token_sha256 == token_digest(refresh_token))
+    )
+    if session is None or session.revoked_reason != ROTATED:
+        return None
+    return session
 
 
 def rotate_session(refresh_token: str, *, now: datetime | None = None) -> IssuedSession:
@@ -188,6 +221,8 @@ def rotate_session(refresh_token: str, *, now: datetime | None = None) -> Issued
         raise RefreshRejected(
             f"refresh token no longer usable ({reason})",
             reused=(reason == ROTATED),
+            family_id=session.family_id,
+            user_id=session.user_id,
         )
     db.session.expire(session)
 
