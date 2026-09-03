@@ -37,3 +37,18 @@ services:
         value: "bench_password_hashing"
       - key: BOOT_TASK_ARGS
         value: "--repeats 3"
+      # For BOOT_TASK=claim_t06_data. The two id lists must between them name
+      # every plan that still has no owner: one the script cannot place stops
+      # the boot rather than guessing, and the excluded ones are deleted, so
+      # this is the list to read twice. Ids only -- they come from reading the
+      # deployed table, not from matching titles.
+      - key: CLAIM_PLAN_IDS
+        value: ""
+      - key: CLAIM_EXCLUDE_PLAN_IDS
+        value: ""
+      - key: CLAIM_EMAIL
+        sync: false
+      # Never an argument: BOOT_TASK_ARGS is committed here, and a command line
+      # also lands in the process list and the boot log.
+      - key: CLAIM_PASSWORD
+        sync: false

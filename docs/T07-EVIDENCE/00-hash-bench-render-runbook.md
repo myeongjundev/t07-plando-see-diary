@@ -123,6 +123,24 @@ git commit -am "Put the boot task back to none" && git push
 이쪽은 **본 서비스에서** 돌린다. 버리는 벤치마크 서비스에서 돌리면 안 된다 — T06 자료를
 상대로 계정을 만드는 일이라, 한 번만, 옳은 곳에서 일어나야 한다.
 
+### 먼저 준비할 것 — 고정 ID 목록
+
+스크립트는 **주인 없는 계획을 하나도 빠짐없이 두 목록 중 하나에** 넣으라고 요구한다.
+어느 쪽에도 없는 계획이 있으면 **아무것도 바꾸지 않고 그 ID를 찍으며 멈춘다.** 제목으로
+고르지 않는 이유는 설계 2절에 있다 — 부분 문자열은 진짜 자료에도 걸릴 수 있다.
+
+그러니 Neon 콘솔에서 한 번 읽어야 한다:
+
+```sql
+SELECT id, title, start_date FROM plans WHERE user_id IS NULL ORDER BY created_at;
+```
+
+보고 나서 `CLAIM_PLAN_IDS`(내 것으로 가져올 것)와 `CLAIM_EXCLUDE_PLAN_IDS`(버릴 것)에
+쉼표로 넣는다. **제외 목록은 삭제된다.** 되돌릴 수 없으니 두 번 읽는다.
+
+`--apply` 없이 돌리면 **아무것도 바꾸지 않고 무엇을 할지만 보고한다.** 먼저 그렇게
+한 번 돌려 건수를 확인하는 것을 권한다.
+
 ### claim과 NOT NULL은 같은 배포에 넣지 않는다
 
 현재 `deploy/start.sh`는 BOOT_TASK를 모두 백그라운드로 보내지만, 실제 이관 구현에서는
