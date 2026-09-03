@@ -13,3 +13,13 @@ services:
         value: "1"
       - key: DATABASE_URL
         sync: false
+      # One-off commands on Render Free: the plan has no shell, no SSH, no
+      # one-off jobs and no cron, so the only code that ever runs on the
+      # instance is this web service. deploy/start.sh reads BOOT_TASK at boot
+      # and runs the named script in the background, bracketed in the log.
+      # Flip it here, push, read the log, flip it back to none, push again.
+      # Known names: none | bench_password_hashing | claim_t06_data
+      - key: BOOT_TASK
+        value: "none"
+      - key: BOOT_TASK_ARGS
+        value: "--repeats 3"
