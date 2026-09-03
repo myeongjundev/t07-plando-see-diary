@@ -1,6 +1,10 @@
 services:
   - type: web
-    name: t06-plando-see-diary
+    # T07 gets its own service, not a repoint of the T06 one. T06 is already
+    # submitted against https://t06-plando-see-diary.onrender.com and its
+    # criteria require that URL to open without a login; T07-C03 requires its
+    # own URL to open *at* a login screen. One service cannot be both.
+    name: t07-plando-see-diary
     runtime: docker
     plan: free
     region: oregon
