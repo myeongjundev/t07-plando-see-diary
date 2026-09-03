@@ -20,6 +20,6 @@ services:
       # Flip it here, push, read the log, flip it back to none, push again.
       # Known names: none | bench_password_hashing | claim_t06_data
       - key: BOOT_TASK
-        value: "none"
+        value: "bench_password_hashing"
       - key: BOOT_TASK_ARGS
         value: "--repeats 3"
