@@ -1,10 +1,14 @@
 services:
   - type: web
-    # T07 gets its own service, not a repoint of the T06 one. T06 is already
-    # submitted against https://t06-plando-see-diary.onrender.com and its
-    # criteria require that URL to open without a login; T07-C03 requires its
-    # own URL to open *at* a login screen. One service cannot be both.
-    name: t07-plando-see-diary
+    # T07 continues on T06's service and T06's database rather than standing up
+    # new ones: the URL stays, and the T06 rows are already in the right place
+    # for the claim in T07-C100, with no dump and restore.
+    #
+    # The cost is paid once, in ordering. Repointing this service at the T07
+    # repository turns https://t06-plando-see-diary.onrender.com into a login
+    # screen, and T06's criteria want that URL to open without one. So T06 must
+    # be submitted BEFORE the repoint. See docs/T07-ARCHITECTURE.md section 0.
+    name: t06-plando-see-diary
     runtime: docker
     plan: free
     region: oregon

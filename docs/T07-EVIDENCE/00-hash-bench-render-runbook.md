@@ -39,30 +39,37 @@ Render 문서가 명시한다: 대시보드 Shell과 SSH는 **유료 웹 서비�
 - 노출되는 값 없음: 벤치마크는 합성 비밀번호(`bench-only-not-a-real-password-1234`,
   스크립트에 그대로 적혀 있다)만 쓰고, 저장된 해시는 **길이와 접두사만** 출력한다.
 
-## 먼저 — T07 서비스가 아직 없다
+## 먼저 — 이 저장소를 보는 서비스가 아직 없다
 
-`t07-plando-see-diary`는 2026-09-03에 새로 만든 저장소다. 지금 라이브인
-`t06-plando-see-diary.onrender.com`은 **T06 저장소**를 보고 있으므로, 이 저장소에
-푸시해도 아무 배포도 일어나지 않는다. 벤치마크는 **T07용 서비스를 만든 뒤에야** 돈다.
+`t07-plando-see-diary`는 2026-09-03에 새로 만든 저장소다. 라이브인
+`t06-plando-see-diary.onrender.com`은 **T06 저장소**를 보고 있으므로, 여기에 푸시해도
+아무 배포도 일어나지 않는다.
 
-기존 서비스를 T07 저장소로 돌리면 안 된다. T06은 이미 그 주소로 제출됐고 T06 기준은
-그 첫 화면이 **로그인 없이** 열릴 것을 요구한다. T07-C03은 자기 주소의 첫 화면이
-**로그인 화면일 것**을 요구한다. 한 서비스가 둘 다일 수 없다. `render.yaml`의
-서비스 이름은 그래서 `t07-plando-see-diary`로 바꿔 두었다.
+그리고 그 서비스를 T07로 돌리는 것은 **T06 제출 전까지 막혀 있다**(설계 0절). 돌리는
+순간 T06 결과물 URL이 로그인 화면이 되기 때문이다.
 
-**데이터베이스도 따로 만들어야 한다.** T07 마이그레이션은 `users`를 만들고
-`plans.user_id`를 NOT NULL로 조인다. T06 데이터베이스를 그대로 물리면 **라이브 T06
-앱이 깨진다.** 새 Neon 데이터베이스를 만들고, T06 자료는 덤프·복원으로 옮긴 뒤
-`claim_t06_data`로 계정에 붙인다(C100).
+### 그래서 벤치마크만 먼저 빼내는 길
 
-Render에서 Blueprint로 이 저장소를 가리켜 새 서비스를 만들고, `DATABASE_URL`에
-새 Neon 주소를 넣는다.
+측정 하나 때문에 T06 제출을 기다릴 이유는 없다. **버리는 서비스를 하나 세운다.**
+
+1. Render에서 **새 Free 웹 서비스**를 만들고 저장소를 `t07-plando-see-diary`로,
+   이름은 `t07-bench` 같은 임시 이름으로 둔다. 이름이 다르므로 **t06 주소는 손대지
+   않는다.**
+2. `DATABASE_URL`에 **T06 Neon 주소를 그대로** 넣는다. 아직 T07 마이그레이션이 없으므로
+   부팅의 `flask db upgrade`는 아무것도 바꾸지 않는다 — 그게 없으면 `REQUIRE_POSTGRES=1`
+   에서 컨테이너가 죽어 벤치마크까지 가지도 못한다.
+3. 로그에서 표를 받는다(아래 「실행」 2번).
+4. **서비스를 지운다.** 측정이 끝나면 남을 이유가 없다.
+
+이 서비스는 공개 주소를 하나 갖지만, T07 코드는 아직 인증이 없는 T06 화면 그대로이고
+합성 자료만 들어 있다. 그래도 오래 두지 않는다.
 
 ## 실행
 
 서비스가 생긴 뒤로는 전부 git으로 돈다. 대시보드에서 고칠 것은 `DATABASE_URL`뿐이다.
 
 1. `render.yaml`의 `BOOT_TASK`를 `"bench_password_hashing"`으로 바꾼다.
+   (2026-09-03 현재 **이미 켜져 있다.** 서비스만 만들면 첫 배포에서 바로 돈다.)
 
 ```bash
 git commit -am "Measure hashing cost on the deployed instance" && git push
@@ -77,6 +84,9 @@ git commit -am "Measure hashing cost on the deployed instance" && git push
 ```bash
 git commit -am "Put the boot task back to none" && git push
 ```
+
+`BOOT_TASK`를 끄지 않은 채로 두면, 나중에 T06 서비스를 T07로 돌렸을 때 **본 배포에서도
+벤치마크가 돈다.** 3번은 잊으면 안 되는 단계다.
 
 ## 되돌리기
 
@@ -97,3 +107,6 @@ git commit -am "Put the boot task back to none" && git push
 그래서 `BOOT_TASK`의 고정 목록에 그 이름을 미리 넣어 두었다. 비밀번호는 `BOOT_TASK_ARGS`가
 아니라 **별도 환경변수(`sync: false`)로 받는다** — `render.yaml`은 커밋되는 파일이고,
 인자로 넘기면 로그의 명령줄에도 남는다.
+
+이쪽은 **본 서비스에서** 돌린다. 버리는 벤치마크 서비스에서 돌리면 안 된다 — T06 자료를
+상대로 계정을 만드는 일이라, 한 번만, 옳은 곳에서 일어나야 한다.
