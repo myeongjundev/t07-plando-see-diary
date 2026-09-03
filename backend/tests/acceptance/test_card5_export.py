@@ -37,12 +37,33 @@ def test_t06_c36_complete_export_retains_deleted_history_and_links(client):
     assert data['completionEvents'][0]['taskId'] == task['id']
     assert data['reflections'][0]['nextPlanId'] == next_plan['id']
     assert data['planRevisions'][0]['title'] == plan['title']
+    # Every table is accounted for as either diary data or deliberately withheld.
+    # A new table has to be classified before this passes, so the way T07 adds a
+    # credentials table is never "and it quietly joined the export".
+    withheld = SCHEMA['database']['nonExportedTables']
+    exported = SCHEMA['database']['tables']
+    assert set(db.metadata.tables) == set(exported) | set(withheld)
+    assert not set(exported) & set(withheld)
     for table_name, table in db.metadata.tables.items():
-        mapping = SCHEMA['database']['tables'][table_name]['fields']
+        if table_name in withheld:
+            continue
+        mapping = exported[table_name]['fields']
         assert set(mapping) == set(table.columns.keys())
         export_name = table_name.split('_')[0] + ''.join(s.title() for s in table_name.split('_')[1:])
+        published = {field['exportField'] for field in mapping.values() if field['exportField']}
+        withheld_fields = {name for name, field in mapping.items() if not field['exportField']}
         for row in data[export_name]:
-            assert {field['exportField'] for field in mapping.values()} <= row.keys()
+            assert published <= row.keys()
+            # A column marked unexported must actually be absent, under either
+            # spelling -- the contract is only worth the check behind it.
+            assert not withheld_fields & row.keys()
+            camel = {n.split('_')[0] + ''.join(s.title() for s in n.split('_')[1:]) for n in withheld_fields}
+            assert not camel & row.keys()
+    # Nothing from a withheld table may ride along under any key.
+    assert not {t for t in withheld} & data.keys()
+    serialized = json.dumps(data)
+    for secret_field in ('password_hash', 'passwordHash', 'token_sha256', 'tokenSha256', 'ip_hash', 'ipHash'):
+        assert secret_field not in serialized
     again = client.get('/api/export').json
     assert {k: v for k, v in again.items() if k != 'exportedAt'} == {k: v for k, v in data.items() if k != 'exportedAt'}
 

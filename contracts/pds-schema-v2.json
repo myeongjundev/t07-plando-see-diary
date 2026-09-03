@@ -403,6 +403,12 @@
   },
   "database": {
     "engine": "PostgreSQL",
+    "nonExportedTables": {
+      "users": "Credentials. The argon2id hash must never leave the database, and an export is a file the user downloads and forwards.",
+      "refresh_sessions": "Session token digests. Exporting them would put the material for a session-fixation attempt into a shareable file.",
+      "login_attempts": "Failure history keyed by address and hashed IP. Not the account holder's diary, and useful to an attacker as reconnaissance.",
+      "security_events": "Audit trail. It exists to be read during an incident, not to be handed to whoever asks for their data."
+    },
     "tables": {
       "plans": {
         "primaryKey": "id",
@@ -416,6 +422,12 @@
             "exportField": "id",
             "type": "VARCHAR(36)",
             "nullable": false
+          },
+          "user_id": {
+            "exportField": null,
+            "type": "VARCHAR(36)",
+            "nullable": true,
+            "note": "T07 ownership root. Not exported: an export already contains only the requesting account's rows, so repeating the owner on every row would add an identifier without adding information. Nullable until claim_t06_data has given the T06 rows an owner."
           },
           "title": {
             "exportField": "title",

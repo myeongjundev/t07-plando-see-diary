@@ -26,6 +26,16 @@ class Plan(db.Model):
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    # The single root of ownership: tasks, executions, reflections and revisions
+    # decide who owns them by joining through here rather than carrying a copy,
+    # so there is never a second answer to disagree with (design section 2).
+    #
+    # Nullable for now. The T06 rows predate accounts, and NOT NULL is applied
+    # in a later deploy once claim_t06_data has given them an owner -- the
+    # migration and the claim cannot ride the same boot.
+    user_id: Mapped[str | None] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True
+    )
     title: Mapped[str] = mapped_column(String(160), nullable=False)
     start_date: Mapped[date] = mapped_column(Date, nullable=False)
     end_date: Mapped[date] = mapped_column(Date, nullable=False)

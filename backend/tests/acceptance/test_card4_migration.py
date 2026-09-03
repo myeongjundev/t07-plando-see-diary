@@ -6,7 +6,7 @@ from flask_migrate import upgrade
 
 from app import create_app
 from app.extensions import db
-from test_card2_tasks import create_plan, create_task
+from legacy_rows import LEGACY_PLAN, LEGACY_TASK, seed_legacy_plan_and_task
 from test_card3_executions import LOG, KEY
 from test_card4_see import NEXT, REFLECTION
 
@@ -17,18 +17,19 @@ def test_card4_upgrade_preserves_logs_and_concurrent_next_plan_is_single(tmp_pat
     try:
         with app.app_context():
             upgrade(directory=migrations, revision="fb630bb3ebd6")
+            seed_legacy_plan_and_task()
         client = app.test_client()
-        plan = create_plan(client)
-        task = create_task(client, plan["id"])
-        log = client.post(f"/api/tasks/{task['id']}/executions", json=LOG).json["execution"]
-        event = client.post(f"/api/tasks/{task['id']}/complete", json=KEY).json["completionEvent"]
+        # Execution logs and completion events exist at fb630bb3ebd6, so these
+        # can still go through the API and be carried across the migration.
+        log = client.post(f"/api/tasks/{LEGACY_TASK['id']}/executions", json=LOG).json["execution"]
+        event = client.post(f"/api/tasks/{LEGACY_TASK['id']}/complete", json=KEY).json["completionEvent"]
         with app.app_context():
             upgrade(directory=migrations)
             upgrade(directory=migrations)
-        assert client.get(f"/api/tasks/{task['id']}/executions").json["executions"] == [log]
-        assert client.get(f"/api/tasks/{task['id']}/completions").json["completionEvents"] == [event]
-        assert client.get(f"/api/plans/{plan['id']}").json["plan"] == plan
-        row = client.post(f"/api/plans/{plan['id']}/reflections", json=REFLECTION).json["reflection"]
+        assert client.get(f"/api/tasks/{LEGACY_TASK['id']}/executions").json["executions"] == [log]
+        assert client.get(f"/api/tasks/{LEGACY_TASK['id']}/completions").json["completionEvents"] == [event]
+        assert client.get(f"/api/plans/{LEGACY_PLAN['id']}").json["plan"]["title"] == LEGACY_PLAN["title"]
+        row = client.post(f"/api/plans/{LEGACY_PLAN['id']}/reflections", json=REFLECTION).json["reflection"]
         barrier = Barrier(4)
 
         def create(_):
