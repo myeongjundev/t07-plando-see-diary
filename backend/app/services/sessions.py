@@ -175,10 +175,20 @@ def rotate_session(refresh_token: str, *, now: datetime | None = None) -> Issued
     )
     if claimed.rowcount != 1:
         db.session.rollback()
-        # Already spent. Either a replay of a stolen copy or a client that lost
-        # the race; the server cannot tell which, which is why step 14 revokes
-        # the family rather than only this row.
-        raise RefreshRejected("refresh token already used", reused=True)
+        db.session.expire(session)
+        # Losing the claim is not by itself a replay. Read why the row died.
+        #
+        # Only ROTATED means this token was already spent for a successor, which
+        # is the signature of a copy being used twice. LOGOUT, PASSWORD_CHANGE
+        # and ACCOUNT_DELETE mean the session was deliberately ended, possibly
+        # a moment ago in another tab, and treating that as an attack would have
+        # step 14 revoking the family every time someone logs out with a refresh
+        # in flight.
+        reason = session.revoked_reason
+        raise RefreshRejected(
+            f"refresh token no longer usable ({reason})",
+            reused=(reason == ROTATED),
+        )
     db.session.expire(session)
 
     successor_token = new_refresh_token()
@@ -249,6 +259,29 @@ def revoke(session: RefreshSession, reason: str, *, now: datetime | None = None)
         return
     session.revoked_at = now or utc_now()
     session.revoked_reason = reason
+
+
+def end_session(session_id: str, reason: str, *, now: datetime | None = None) -> bool:
+    """End one session by id. True if this call is what ended it.
+
+    The same conditional update rotation uses, for the same reason: a logout and
+    a rotation of the same session can arrive together, and exactly one of them
+    has to win. Whichever loses reads the row afterwards and finds out how it
+    died, rather than both writing and the last one deciding.
+
+    Idempotent. Logging out twice is not an error, and the second call must not
+    overwrite the first reason -- 'rotated' silently becoming 'logout' would
+    erase the history reuse detection reads.
+    """
+    now = now or utc_now()
+    claimed = db.session.execute(
+        db.update(RefreshSession)
+        .where(RefreshSession.id == session_id, RefreshSession.revoked_at.is_(None))
+        .values(revoked_at=now, revoked_reason=reason)
+        .execution_options(synchronize_session=False)
+    )
+    db.session.commit()
+    return claimed.rowcount == 1
 
 
 def revoke_family(family_id: str, reason: str, *, now: datetime | None = None) -> int:

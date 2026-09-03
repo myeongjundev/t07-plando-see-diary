@@ -9,12 +9,19 @@ from flask import g, jsonify, request
 from app.api import api
 from app.api.plans import error_response
 from app.auth.cookies import attach_rotated_session, attach_session, clear_session, read_refresh_cookie
-from app.auth.csrf import CSRF_FAILED, NOT_JSON, csrf_matches
+from app.auth.csrf import CSRF_FAILED, NOT_JSON, check_state_changing_request, csrf_matches
 from app.auth.guards import NOT_AUTHENTICATED, login_required
 from app.extensions import db
 from app.models import User
 from app.security.http import check_unauthenticated_request, origin_is_allowed, wants_json
-from app.services.sessions import RefreshRejected, open_session, refresh_is_live, rotate_session
+from app.services.sessions import (
+    LOGOUT,
+    RefreshRejected,
+    end_session,
+    open_session,
+    refresh_is_live,
+    rotate_session,
+)
 from app.services.accounts import (
     DUPLICATE_EMAIL,
     AccountValidationError,
@@ -135,6 +142,29 @@ def refresh():
         refresh_token=issued.refresh_token,
         refresh_expires_at=issued.session.expires_at,
     )
+
+
+@api.post("/auth/logout")
+@login_required
+def logout():
+    """End this session on the server, then clear the browser's copy.
+
+    The order matters. Revoking first means that if the response is lost -- a
+    dropped connection, a closed tab -- the session is already dead and the
+    cookies the browser kept are worth nothing. Clearing first and revoking
+    after would leave a live session behind exactly when the user could not see
+    that logout had failed.
+
+    This is what T07-C109 and C114 are asking to be shown: the same request,
+    with the same cookie, succeeding before and refused after.
+    """
+    refusal = check_state_changing_request()
+    if refusal:
+        return error_response(refusal[0], status=refusal[1])
+
+    end_session(g.current_session.id, LOGOUT)
+    response = jsonify({"ok": True})
+    return clear_session(response)
 
 
 @api.get("/auth/me")
