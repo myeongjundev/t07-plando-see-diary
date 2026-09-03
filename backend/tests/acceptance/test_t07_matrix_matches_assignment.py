@@ -26,7 +26,10 @@ MATRIX = ROOT / "docs" / "T07-ACCEPTANCE-MATRIX.md"
 CRITERION = re.compile(r"^- (T07-C\d+) (.+)$", re.M)
 # "| T07-C99 | 통과 기준 | 확인하는 행동 | 자동 검사 · 증거 |" in the matrix.
 ROW = re.compile(r"^\| (T07-C\d+) \| (.+?) \| (.+?) \| (.+?) \|$", re.M)
-TEST_NAME = re.compile(r"`(test_[a-z0-9_]+)`")
+# Only the criterion tests, named test_c<criterion>_<what>. The matrix also
+# mentions the three tests in this file, and counting those as "planned" would
+# arm the guard against itself the moment it was written.
+TEST_NAME = re.compile(r"`(test_c\d+[a-z0-9_]*)`")
 
 
 def _read(path: Path) -> str:
