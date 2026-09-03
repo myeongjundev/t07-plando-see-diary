@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from sqlalchemy import select, update
 
 from app.extensions import db
-from app.models import CompletionEvent, ExecutionLog, Task
+from app.models import CompletionEvent, ExecutionLog, Plan, Task
 from app.models.plan import utc_now
 from app.services.plans import ValidationError
 from app.time import utc_iso
@@ -25,6 +25,36 @@ def parse_instant(value, field: str) -> datetime:
         raise ValidationError({field: "시간대가 포함된 ISO 시각을 입력하세요."}) from exc
 
 
+def _guard_study_order(task: Task, started_at: datetime) -> None:
+    """The other half of T07-C09, on the plan the five-day study is about.
+
+    C09 wants the rule change to sit between the day-2 and day-3 records.
+    `rule_changes` enforces one direction by refusing a change that arrives
+    after day 3 has been logged; this is the other, refusing the day-3 record
+    while no change has been written down.
+
+    Both are needed because the failure is not recoverable. Once the two rows
+    exist in the wrong order the only ways out are editing a timestamp or
+    starting the five days over, and the five days are the tightest constraint
+    in the schedule. Applies to the one configured observation plan and to no
+    other diary.
+
+    Imported here rather than at module scope: rule_changes reads execution
+    rows, and importing it at the top would make the two modules import each
+    other.
+    """
+    from app.services import rule_changes
+
+    observation = rule_changes.observation_plan_id()
+    if observation is None or task.plan_id != observation:
+        return
+    plan = db.session.get(Plan, task.plan_id)
+    if plan is not None and rule_changes.blocks_execution(plan, started_at):
+        raise ValidationError({
+            "startedAt": "3일차 기록을 남기기 전에 계획 규칙 변경을 먼저 기록하세요.",
+        })
+
+
 def create_execution(task: Task, payload) -> ExecutionLog:
     fields = {"startedAt", "endedAt", "actualMinutes", "blockerReason"}
     if not isinstance(payload, dict) or set(payload) != fields:
@@ -39,6 +69,7 @@ def create_execution(task: Task, payload) -> ExecutionLog:
     blocker = payload["blockerReason"]
     if not isinstance(blocker, str) or len(blocker) > 500:
         raise ValidationError({"blockerReason": "막힌 이유는 500자 이하의 글자여야 합니다."})
+    _guard_study_order(task, start)
     log = ExecutionLog(task_id=task.id, started_at=start, ended_at=end,
                        actual_minutes=minutes, blocker_reason=blocker)
     db.session.add(log)

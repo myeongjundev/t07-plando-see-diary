@@ -2,7 +2,17 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from app.extensions import db
-from app.models import CompletionEvent, ExecutionLog, Plan, PlanRevision, Reflection, Task, TaskTag
+from app.models import (
+    CompletionEvent,
+    ExecutionLog,
+    Plan,
+    PlanRevision,
+    PlanRuleChange,
+    PlanRuleChangeCitation,
+    Reflection,
+    Task,
+    TaskTag,
+)
 from app.models.plan import utc_now
 from app.services.executions import serialize_completion, serialize_execution
 from app.services.plans import serialize_plan, serialize_revision
@@ -34,6 +44,9 @@ def export_all(user_id: str) -> dict:
         with Session(connection) as snapshot:
             plan_ids = snapshot.scalars(owned_plan_ids(user_id)).all()
             task_ids = snapshot.scalars(select(Task.id).where(Task.plan_id.in_(plan_ids))).all()
+            rule_change_ids = snapshot.scalars(
+                select(PlanRuleChange.id).where(PlanRuleChange.plan_id.in_(plan_ids))
+            ).all()
 
             def owned(model, column, ids, key):
                 return snapshot.scalars(select(model).where(column.in_(ids)).order_by(key)).all()
@@ -65,4 +78,27 @@ def export_all(user_id: str) -> dict:
                                                    ExecutionLog.id)],
                 "reflections": [serialize_reflection(row)
                                 for row in owned(Reflection, Reflection.plan_id, plan_ids, Reflection.id)],
+                # The rule change is the user diary entry T07-C09 to C11 are
+                # about, so it leaves with the rest of the diary. The citations
+                # go as their own rows rather than nested, because that is the
+                # shape they have in the database -- an export that reshapes
+                # its own tables is one nobody can check against the schema.
+                "planRuleChanges": [
+                    {
+                        "id": row.id, "planId": row.plan_id,
+                        "changedAt": utc_iso(row.changed_at), "reason": row.reason,
+                        "ruleBefore": row.rule_before, "ruleAfter": row.rule_after,
+                        "createdAt": utc_iso(row.created_at),
+                    }
+                    for row in owned(PlanRuleChange, PlanRuleChange.plan_id, plan_ids, PlanRuleChange.id)
+                ],
+                "planRuleChangeCitations": [
+                    {
+                        "ruleChangeId": row.rule_change_id,
+                        "dayNumber": row.day_number,
+                        "executionId": row.execution_id,
+                    }
+                    for row in owned(PlanRuleChangeCitation, PlanRuleChangeCitation.rule_change_id,
+                                     rule_change_ids, PlanRuleChangeCitation.day_number)
+                ],
             }

@@ -57,3 +57,16 @@ services:
       # also lands in the process list and the boot log.
       - key: CLAIM_PASSWORD
         sync: false
+      # The one plan the five-day observation is about. Set after the plan
+      # exists, on day 1, from the id the study protocol records.
+      #
+      # It buys one rule and nothing else: on that plan, an execution on study
+      # day 3 or later is refused until the rule change has been recorded
+      # (T07-C09). Getting that order wrong is not repairable -- the ways back
+      # are editing a timestamp or restarting the five days -- and the five days
+      # are the tightest constraint in the schedule. Every other plan, the T06
+      # rows included, is an ordinary diary this does not touch.
+      #
+      # Empty until then, and empty means the rule is off.
+      - key: OBSERVATION_PLAN_ID
+        sync: false

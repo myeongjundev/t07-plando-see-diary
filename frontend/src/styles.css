@@ -1550,3 +1550,118 @@ summary:hover { color: var(--accent); }
 @media (max-width: 720px) {
   .select-option { padding: 12px; }
 }
+
+/* ── 계획 규칙 변경 (T07 카드 5) ─────────────────────────────────────── */
+
+.rule-change {
+  margin-top: var(--s5);
+  padding-top: var(--s5);
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: var(--s4);
+}
+
+.rule-lede,
+.rule-blocked {
+  margin: 0;
+  font-size: var(--t-sm);
+  color: var(--ink-2);
+}
+
+.rule-days {
+  overflow-x: auto;
+}
+
+.rule-days table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--t-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.rule-days caption {
+  padding-bottom: var(--s2);
+  color: var(--ink-2);
+  text-align: left;
+}
+
+.rule-days th,
+.rule-days td {
+  padding: var(--s2) var(--s3);
+  border-bottom: 1px solid var(--line);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.rule-days thead th,
+.rule-days tbody th {
+  text-align: left;
+  color: var(--ink-2);
+  font-weight: 500;
+}
+
+.rule-form {
+  display: grid;
+  gap: var(--s4);
+}
+
+.rule-record {
+  display: grid;
+  gap: var(--s2);
+  padding: var(--s4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-ctl);
+}
+
+.rule-record p { margin: 0; }
+
+.rule-when,
+.rule-citations {
+  font-size: var(--t-sm);
+  color: var(--ink-2);
+}
+
+.rule-citations code {
+  font-size: 0.9em;
+  word-break: break-all;
+}
+
+.rule-arrow { font-size: var(--t-body); }
+
+.rule-comparison {
+  margin-top: var(--s3);
+  padding-top: var(--s3);
+  border-top: 1px solid var(--line);
+}
+
+/* 지표 이름·단위·계산 규칙은 두 쪽 위에 한 번만 적는다. 쪽마다 적으면 언젠가
+   두 이름이 갈라지고, 그게 곧 C13~C15 위반이다. */
+.rule-metric {
+  margin: 0 0 var(--s3);
+  font-size: var(--t-sm);
+  color: var(--ink-2);
+}
+
+.rule-halves {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: var(--s3);
+}
+
+.rule-half h5 {
+  margin: 0 0 var(--s2);
+  font-size: var(--t-sm);
+  font-weight: 500;
+  color: var(--ink-2);
+}
+
+.rule-half p {
+  margin: var(--s2) 0 0;
+  font-size: var(--t-sm);
+  color: var(--ink-2);
+}
+
+.rule-ratio {
+  font-size: var(--t-h3);
+  font-variant-numeric: tabular-nums;
+}

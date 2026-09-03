@@ -21,7 +21,9 @@
     "taskTags",
     "completionEvents",
     "executionLogs",
-    "reflections"
+    "reflections",
+    "planRuleChanges",
+    "planRuleChangeCitations"
   ],
   "properties": {
     "schemaVersion": {
@@ -71,6 +73,18 @@
       "type": "array",
       "items": {
         "$ref": "#/$defs/reflection"
+      }
+    },
+    "planRuleChanges": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/planRuleChange"
+      }
+    },
+    "planRuleChangeCitations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/planRuleChangeCitation"
       }
     }
   },
@@ -397,6 +411,72 @@
         },
         "createdAt": {
           "$ref": "#/$defs/instant"
+        }
+      }
+    },
+    "planRuleChange": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "planId",
+        "changedAt",
+        "reason",
+        "ruleBefore",
+        "ruleAfter",
+        "createdAt"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "planId": {
+          "$ref": "#/$defs/uuid"
+        },
+        "changedAt": {
+          "$ref": "#/$defs/instant"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "ruleBefore": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "ruleAfter": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "createdAt": {
+          "$ref": "#/$defs/instant"
+        }
+      }
+    },
+    "planRuleChangeCitation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ruleChangeId",
+        "dayNumber",
+        "executionId"
+      ],
+      "properties": {
+        "ruleChangeId": {
+          "$ref": "#/$defs/uuid"
+        },
+        "dayNumber": {
+          "type": "integer",
+          "enum": [
+            1,
+            2
+          ]
+        },
+        "executionId": {
+          "$ref": "#/$defs/uuid"
         }
       }
     }
@@ -780,6 +860,85 @@
           "created_at": {
             "exportField": "createdAt",
             "type": "TIMESTAMP WITH TIME ZONE",
+            "nullable": false
+          }
+        }
+      },
+      "plan_rule_changes": {
+        "primaryKey": "id",
+        "foreignKeys": {
+          "plan_id": "plans.id"
+        },
+        "orderingRule": "changed_at must fall after the cited day-2 record ends and before any day-3 execution exists (T07-C09)",
+        "fields": {
+          "id": {
+            "exportField": "id",
+            "type": "VARCHAR(36)",
+            "nullable": false
+          },
+          "plan_id": {
+            "exportField": "planId",
+            "type": "VARCHAR(36)",
+            "nullable": false
+          },
+          "changed_at": {
+            "exportField": "changedAt",
+            "type": "TIMESTAMP WITH TIME ZONE",
+            "nullable": false
+          },
+          "reason": {
+            "exportField": "reason",
+            "type": "TEXT",
+            "nullable": false
+          },
+          "rule_before": {
+            "exportField": "ruleBefore",
+            "type": "TEXT",
+            "nullable": false
+          },
+          "rule_after": {
+            "exportField": "ruleAfter",
+            "type": "TEXT",
+            "nullable": false
+          },
+          "created_at": {
+            "exportField": "createdAt",
+            "type": "TIMESTAMP WITH TIME ZONE",
+            "nullable": false
+          }
+        }
+      },
+      "plan_rule_change_citations": {
+        "primaryKey": "rule_change_id,day_number",
+        "unique": [
+          [
+            "rule_change_id",
+            "execution_id"
+          ]
+        ],
+        "foreignKeys": {
+          "rule_change_id": "plan_rule_changes.id",
+          "execution_id": "execution_logs.id"
+        },
+        "checks": [
+          "day_number IN (1, 2)"
+        ],
+        "citationRule": "Exactly one row per study day; the cited executions must start on the plan-relative days 1 and 2 in Asia/Seoul (T07-C12)",
+        "deleteRule": "execution_id is NO ACTION, not RESTRICT: a cited execution cannot be deleted on its own, but an account delete cascading down both paths at once still completes",
+        "fields": {
+          "rule_change_id": {
+            "exportField": "ruleChangeId",
+            "type": "VARCHAR(36)",
+            "nullable": false
+          },
+          "day_number": {
+            "exportField": "dayNumber",
+            "type": "SMALLINT",
+            "nullable": false
+          },
+          "execution_id": {
+            "exportField": "executionId",
+            "type": "VARCHAR(36)",
             "nullable": false
           }
         }

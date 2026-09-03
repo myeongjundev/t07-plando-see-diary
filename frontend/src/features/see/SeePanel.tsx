@@ -3,6 +3,7 @@ import type { Plan } from "../../api/plans";
 import { createNextPlan, getSummary, listReflections, Metric, NextPlanInput, Period, Reflection, saveReflection, Summary } from "../../api/reflections";
 import DateField from "../../components/DateField";
 import Select from "../../components/Select";
+import RuleChangePanel from "./RuleChangePanel";
 
 const METRICS: { key: Metric; label: string; unit: string }[] = [
   { key: "taskCount", label: "할 일", unit: "개" },
@@ -182,6 +183,11 @@ export default function SeePanel({ plan, revision, onPlanCreated, onOpenPlan }: 
     {!plan ? <p>먼저 계획을 저장하세요.</p> : <>
       <p className="selected-plan-name">현재 계획: <strong>{plan.title}</strong></p>
       <PlanReview key={plan.id} plan={plan} revision={revision} onPlanCreated={onPlanCreated} onOpenPlan={onOpenPlan} />
+      {/* Inside See because changing the rule is a looking-back action, and it
+          belongs next to the aggregate it is argued from. It has to be
+          deployed before the evening of day 2 or C09's ordering cannot be
+          produced at all. */}
+      <RuleChangePanel key={`rule-${plan.id}`} plan={plan} revision={revision} />
     </>}
   </section>;
 }

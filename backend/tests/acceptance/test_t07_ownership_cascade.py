@@ -38,6 +38,16 @@ REQUIRED_ACTIONS = {
     ("plan_revisions", "plan_id"): "CASCADE",
     ("reflections", "plan_id"): "CASCADE",
     ("reflections", "next_plan_id"): "SET NULL",
+    ("plan_rule_changes", "plan_id"): "CASCADE",
+    ("plan_rule_change_citations", "rule_change_id"): "CASCADE",
+    # NO ACTION, deliberately, and the one entry here that is not a cascade.
+    # RESTRICT would refuse a standalone delete of a cited execution -- which is
+    # wanted -- but it is checked the instant the row goes, and an account
+    # delete cascades to executions and to citations down two separate paths
+    # with no order between them. NO ACTION refuses the same standalone delete
+    # and is checked at the end of the statement, by which point the citation
+    # has gone too.
+    ("plan_rule_change_citations", "execution_id"): "NO ACTION",
 }
 
 
