@@ -2,6 +2,39 @@
 
 Updated: 2026-09-04 KST
 
+## 2026-09-04 Section ⑥ sharpened — 14 accepted limitations
+
+Asked to add "no email verification" and "no password reset" to the guide's
+section ⑥. **Both were already in `docs/T07-ARCHITECTURE.md` section 11**, so
+they were sharpened rather than duplicated: each now says why it is absent
+(neither is possible without a way to send mail, which this deployment has no
+facility for and no criterion requires) and what it costs (a forgotten password
+ends the account *and its diary*; an unverified address means the real owner
+cannot ever sign up and cannot recover). Email verification is also what would
+have closed the signup-enumeration entry three items above it — the three read
+as one story now.
+
+Four more added, all produced by this session's work rather than inherited:
+
+- the composition rule we introduced, against 800-63B's advice, and why the
+  throttle is still what costs a guesser;
+- what the strength meter cannot see — no breach list, no personal data, so
+  `Myeongjun2026!` grades 강함 while being the first thing a targeted attack
+  tries;
+- rotating `IP_HASH_SECRET` silently clears every login lock, which is a runbook
+  fact with no code-level defence;
+- the non-ASCII CSRF header that answered 500 instead of 403 — fixed, but its
+  existence is the point: a refusal path can crash, that one was distinguishable
+  because of it, and nothing says it was the only one.
+
+Section 11 is now 14 entries and is the single source for the guide's ⑥. The
+handoff points at it rather than keeping a second list that would drift.
+
+Commands run:
+
+- `backend/.venv/Scripts/python.exe -m pytest backend/tests` — 304 passed, 4 skipped.
+- `backend/.venv/Scripts/python.exe backend/scripts/audit_secrets.py` — 0 findings.
+
 ## 2026-09-04 Deploy runbook was wrong; fixed before it ran
 
 The two-deploy sequence in the runbook could not have worked. `deploy/start.sh`
