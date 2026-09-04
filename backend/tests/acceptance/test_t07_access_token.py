@@ -16,7 +16,8 @@ from app.extensions import db
 from app.models import RefreshSession
 from app.security import tokens
 from app.security.tokens import InvalidAccessToken, issue_access_token, read_access_token
-from app.services.sessions import LOGOUT, PASSWORD_CHANGE, revoke, revoke_all_for_user
+from app.services.sessions import LOGOUT, PASSWORD_CHANGE, revoke
+from conftest import copy_session
 from test_t07_signup_login import EMAIL, PASSWORD, login, signup
 
 USER_ID = "00000000-0000-4000-8000-0000000000u1".replace("0u1", "0c1")
@@ -174,13 +175,35 @@ def test_c114_logout_kills_access_immediately(client, app):
 
 
 def test_c114_password_change_revokes_all_sessions(client, app):
+    """Through the endpoint, which is what a person actually does.
+
+    This used to call `revoke_all_for_user` directly, because the endpoint did
+    not exist yet. Driving the real route is what makes the criterion about the
+    product rather than about a function: it now also covers re-authentication,
+    the transaction, and the fresh session the response carries.
+    """
     signup(client)
     login(client)
     assert client.get("/api/auth/me").status_code == 200
-    user_id = db.session.scalar(db.select(RefreshSession)).user_id
-    assert revoke_all_for_user(user_id, PASSWORD_CHANGE) == 1
-    db.session.commit()
-    assert client.get("/api/auth/me").status_code == 401
+
+    elsewhere = app.test_client()
+    copy_session(client, elsewhere)
+    assert elsewhere.get("/api/auth/me").status_code == 200
+
+    changed = client.post(
+        "/api/auth/password",
+        json={"currentPassword": PASSWORD, "newPassword": "합성-바꾼-비밀번호-5e70"},
+        headers={"X-CSRF-Token": client.get_cookie(CSRF_COOKIE).value},
+    )
+    assert changed.status_code == 200
+
+    # The other browser's token is still signed and still in date, and is now
+    # worth nothing -- which is the sentence C114 is made of.
+    assert elsewhere.get("/api/auth/me").status_code == 401
+    revoked = db.session.scalars(
+        db.select(RefreshSession).where(RefreshSession.revoked_at.is_not(None))
+    ).all()
+    assert revoked and {row.revoked_reason for row in revoked} == {PASSWORD_CHANGE}
 
 
 def test_a_session_that_never_existed_is_refused(client):

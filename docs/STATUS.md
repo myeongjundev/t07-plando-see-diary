@@ -2,6 +2,66 @@
 
 Updated: 2026-09-04 KST
 
+## 2026-09-04 Step 17 — password change and total session revocation
+
+`POST /api/auth/password`, behind `@login_required` and CSRF. The order is the
+whole of the step:
+
+    re-verify the current password
+      -> lock the users row FOR UPDATE
+      -> replace the hash + revoke every session (reason password_change)
+      -> PASSWORD_CHANGED in the same transaction
+      -> commit
+      -> open one new session and return its cookies
+
+- **The user row is locked first, the same order `rotate_session` takes it.**
+  That is what stops "verify token A -> the change revokes everything -> insert
+  successor B", which would leave a live session minted from the credential the
+  change was meant to kill. Taking the rows in one order is also why the two
+  cannot deadlock.
+- **Re-authentication is required.** A session alone would make an unattended
+  screen a full account takeover rather than a chance to read a diary.
+- **The caller is not logged out.** Every other session dies — which is C114 —
+  and the response carries a fresh set of cookies for this one, in a new
+  family. Logging someone out for changing their password teaches them not to.
+- The new password goes through `password_policy_error`, the same function
+  signup uses. A change form held to a looser rule is a way around the policy,
+  not a second door to the same place.
+- Changing it to the current value is refused: it would revoke every session
+  and change nothing.
+- `parse_credentials` was refactored to call `password_policy_error` so there
+  is one place the rules are written.
+
+New: `backend/tests/acceptance/test_t07_password_change.py`, 13 tests plus one
+PostgreSQL-gated skip. `test_c114_password_change_revokes_all_sessions` in
+`test_t07_access_token.py` was upgraded to drive the endpoint instead of calling
+`revoke_all_for_user` directly, so the criterion is now about the product.
+
+**Honest limit on the concurrency test.** It passes on SQLite with the
+`FOR UPDATE` removed — SQLite ignores that clause and serialises writers, which
+reaches the same outcome by another route. Verified by removing the lock and
+running it five times. So the SQLite run pins the *outcome*; the lock being the
+reason is only checked by
+`test_a_refresh_in_flight_cannot_survive_the_change_on_postgresql`, which skips
+without `TEST_DATABASE_URL`. That must be run before this ships, along with the
+two cascade tests already waiting on the same variable.
+
+No UI yet, deliberately: design section 8 puts password change, export and
+account deletion on one account screen, and deletion is step 18. Building the
+screen now would mean building it twice.
+
+Commands run:
+
+- `backend/.venv/Scripts/python.exe -m pytest backend/tests` — **280 passed, 4
+  skipped** (was 267 passed, 3 skipped).
+- `backend/.venv/Scripts/python.exe backend/scripts/audit_secrets.py` — 0 findings.
+
+Remaining: steps 18, 20, 21, and the two human blockers (T06 submission, then
+the deploy that starts the five-day clock).
+
+Handoff target: step 18 — account deletion **and** the account screen together,
+with `TEST_DATABASE_URL` set for the three PostgreSQL-gated tests.
+
 ## 2026-09-04 Password strength meter, and a minimum policy on both sides
 
 Implemented to the written spec. Two things it changes are decisions this

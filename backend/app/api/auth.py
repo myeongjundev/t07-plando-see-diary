@@ -30,12 +30,15 @@ from app.services.sessions import (
     rotate_session,
     spent_by_rotation,
 )
+from app.services import accounts
 from app.services.accounts import (
     DUPLICATE_EMAIL,
     AccountValidationError,
+    WrongPassword,
     authenticate,
     create_account,
     parse_credentials,
+    password_policy_error,
     serialize_user,
 )
 
@@ -274,6 +277,77 @@ def logout():
     events.record(events.LOGOUT, events.SUCCESS, user_id=user_id, session_id=session_id)
     response = jsonify({"ok": True})
     return clear_session(response)
+
+
+@api.post("/auth/password")
+@login_required
+def change_password():
+    """Replace the password, end every session, and open one new one. T07-C114.
+
+    The response carries a fresh set of cookies. Without them the person who
+    just changed their password would be logged out for having done it, which
+    trains people not to do it -- and the criterion is about every *other*
+    session dying, not this one.
+
+    The new session is opened after the change commits, not inside it. If
+    issuing it failed, the password would still be changed and every session
+    still dead, which is the safe way round; the reverse would leave a live
+    session belonging to a change that did not happen.
+    """
+    refusal = check_state_changing_request()
+    if refusal:
+        return error_response(refusal[0], status=refusal[1])
+
+    payload = request.get_json(silent=True)
+    data = payload if isinstance(payload, dict) else {}
+    current_password = data.get("currentPassword")
+    new_password = data.get("newPassword")
+
+    if not isinstance(current_password, str) or not current_password:
+        return error_response(
+            "비밀번호를 변경할 수 없습니다.",
+            details={"currentPassword": "현재 비밀번호를 입력해 주세요."},
+        )
+    # The same rules signup applies, from the same function. A change form held
+    # to a looser rule is a way around the policy rather than a second door to
+    # the same place.
+    policy_error = password_policy_error(new_password, enforce_policy=True)
+    if policy_error:
+        return error_response("비밀번호를 변경할 수 없습니다.", details={"newPassword": policy_error})
+
+    user_id = current_user_id()
+    try:
+        user = accounts.change_password(user_id, current_password, new_password)
+    except AccountValidationError as exc:
+        return error_response("비밀번호를 변경할 수 없습니다.", details=exc.errors)
+    except WrongPassword:
+        # A wrong current password is not a validation error and does not say
+        # which field was wrong beyond the one the caller typed. Nothing here
+        # reveals anything about the account: the caller is already inside it.
+        events.record(events.LOGIN_FAILURE, events.FAILURE, user_id=user_id)
+        db.session.rollback()
+        return error_response(
+            "현재 비밀번호가 올바르지 않습니다.",
+            details={"currentPassword": "현재 비밀번호가 올바르지 않습니다."},
+            status=401,
+        )
+
+    # Inside the same transaction as the change, so the two cannot disagree.
+    events.record(events.PASSWORD_CHANGED, events.SUCCESS, user_id=user_id, commit=False)
+    db.session.commit()
+
+    issued = open_session(user)
+    events.record(
+        events.LOGIN_SUCCESS, events.SUCCESS,
+        user_id=user.id, session_id=issued.session.id,
+    )
+    return attach_session(
+        jsonify({"ok": True}),
+        access_token=issued.access_token,
+        refresh_token=issued.refresh_token,
+        csrf_token=issued.csrf_token,
+        refresh_expires_at=issued.session.expires_at,
+    )
 
 
 @api.get("/auth/me")

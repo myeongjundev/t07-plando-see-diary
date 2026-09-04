@@ -1,8 +1,15 @@
-"""Creating accounts and checking credentials. T07-C94, C95, C98, C99.
+"""Creating accounts, checking credentials, changing a password.
+T07-C94, C95, C98, C99, C114.
 
-Issuing a session is not here. This module answers "is this the right password
-for this address" and nothing else, so that the answer has exactly one shape and
-the code that turns a yes into a cookie can be read on its own.
+Issuing a session is not here: this module answers "is this the right password
+for this account", so that the answer has one shape and the code that turns a
+yes into a cookie can be read on its own.
+
+`change_password` is the one exception, and deliberately so. Replacing the hash
+and revoking every session for that account have to happen under one lock, held
+in the same order `rotate_session` takes it -- and an invariant that spans two
+modules belongs in one function rather than in an endpoint that calls both and
+hopes for the ordering.
 """
 from __future__ import annotations
 
@@ -13,6 +20,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.extensions import db
 from app.models import User, normalize_email
+from app.services.sessions import PASSWORD_CHANGE, revoke_all_for_user
 from app.security.passwords import (
     MAX_PASSWORD_BYTES,
     PasswordTooLong,
@@ -85,22 +93,35 @@ def parse_credentials(payload: object, *, enforce_policy: bool = False) -> Crede
     elif not EMAIL_PATTERN.match(raw_email.strip()):
         errors["email"] = "이메일 형식이 올바르지 않습니다."
 
-    if not isinstance(raw_password, str) or not raw_password:
-        errors["password"] = "비밀번호를 입력해 주세요."
-    elif len(raw_password) < MIN_PASSWORD_CHARS:
-        errors["password"] = f"비밀번호는 {MIN_PASSWORD_CHARS}자 이상이어야 합니다."
-    elif len(raw_password.encode("utf-8")) > MAX_PASSWORD_BYTES:
-        errors["password"] = "비밀번호가 너무 깁니다."
-    elif enforce_policy and not (
-        LETTER_PATTERN.search(raw_password) and DIGIT_PATTERN.search(raw_password)
-    ):
-        # One message for both halves. Saying which of the two is missing is no
-        # more useful than saying both, and the shorter rule is easier to act on.
-        errors["password"] = "비밀번호에 영문과 숫자를 함께 넣어 주세요."
+    password_error = password_policy_error(raw_password, enforce_policy=enforce_policy)
+    if password_error:
+        errors["password"] = password_error
 
     if errors:
         raise AccountValidationError(errors)
     return Credentials(email=normalize_email(raw_email), password=raw_password)
+
+
+def password_policy_error(raw_password: object, *, enforce_policy: bool) -> str | None:
+    """The one place the password rules are spelled out. None means it passes.
+
+    Shared by signup and by the change endpoint, because a new password reached
+    through a different door must not be held to a different rule -- a change
+    form that accepted `1234` would be a way around the policy signup applies.
+    """
+    if not isinstance(raw_password, str) or not raw_password:
+        return "비밀번호를 입력해 주세요."
+    if len(raw_password) < MIN_PASSWORD_CHARS:
+        return f"비밀번호는 {MIN_PASSWORD_CHARS}자 이상이어야 합니다."
+    if len(raw_password.encode("utf-8")) > MAX_PASSWORD_BYTES:
+        return "비밀번호가 너무 깁니다."
+    if enforce_policy and not (
+        LETTER_PATTERN.search(raw_password) and DIGIT_PATTERN.search(raw_password)
+    ):
+        # One message for both halves. Saying which of the two is missing is no
+        # more useful than saying both, and the shorter rule is easier to act on.
+        return "비밀번호에 영문과 숫자를 함께 넣어 주세요."
+    return None
 
 
 def create_account(credentials: Credentials) -> User:
@@ -146,6 +167,62 @@ def authenticate(credentials: Credentials) -> User | None:
     if needs_rehash(user.password_hash):
         user.password_hash = hash_password(credentials.password)
         db.session.commit()
+    return user
+
+
+class WrongPassword(Exception):
+    """The current password did not match. Kept separate from validation.
+
+    A malformed new password and a wrong current one are different answers:
+    the first is a 400 the caller can fix by typing something else, the second
+    is a 401 that says the person at the keyboard has not proved who they are.
+    """
+
+
+def change_password(user_id: str, current_password: str, new_password: str) -> User:
+    """Replace one account's password and kill every session it had. T07-C114.
+
+    Three things happen together or not at all, which is why they are one
+    transaction rather than three calls the endpoint makes in a row.
+
+    **The user row is locked first**, before anything is read or written. That
+    is the same order `rotate_session` takes them in (design section 4), and
+    taking them in the same order is the whole reason the two cannot deadlock.
+
+    **It is also what makes the revocation stick.** Without the lock, a refresh
+    already in flight can verify token A, wait while this function revokes
+    everything, and then insert its successor B -- a live session minted from a
+    credential the password change was meant to kill. The revocation would look
+    correct in the table and be worthless in practice. Serialising on the user
+    row is what closes that window; SQLite ignores FOR UPDATE and serialises
+    writers instead, which reaches the same outcome by another route.
+
+    **Re-authentication is required**, not optional. A session alone must not be
+    enough to change the password: an unattended screen would otherwise be a
+    full account takeover rather than a chance to read someone's diary.
+
+    The caller's own session dies with the rest. The endpoint opens a new one in
+    the same response, so the person who just changed their password is not
+    logged out for having done it -- but they are logged out *everywhere else*,
+    which is the point of the criterion.
+    """
+    user = db.session.scalar(db.select(User).where(User.id == user_id).with_for_update())
+    if user is None:  # pragma: no cover - a live session whose account is gone
+        raise WrongPassword()
+
+    if not verify_password(user.password_hash, current_password):
+        raise WrongPassword()
+    if new_password == current_password:
+        # Refused rather than quietly accepted. It would revoke every session
+        # and change nothing, which is a confusing way to log someone out of
+        # their other devices and no way at all to change a password.
+        raise AccountValidationError({"newPassword": "새 비밀번호가 현재 비밀번호와 같습니다."})
+
+    user.password_hash = hash_password(new_password)
+    revoke_all_for_user(user_id, PASSWORD_CHANGE)
+    # Not committed here. The endpoint records the audit row inside the same
+    # transaction, so a change and the record of it cannot disagree.
+    db.session.flush()
     return user
 
 
