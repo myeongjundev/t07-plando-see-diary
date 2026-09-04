@@ -2,6 +2,45 @@
 
 Updated: 2026-09-04 KST
 
+## 2026-09-04 C77 settled, and the deploy confirmed not done
+
+Two questions the morning handoff left open, both answered by looking rather than
+by remembering.
+
+**Which T06 commit was submitted: `4f3ed709d75c573beac7fc95e700c7719b53087c`.**
+There were never two candidates — the local tag was simply stale. The tag pushed
+to `origin` dereferences to `4f3ed70`, T06's `main` sits at the same commit, and
+T06's `SUBMISSION.md` fixes the Source URL as the 40-hex URL of whatever
+`t06-submission` points at. `1180c8d1329…` is that tag as it stood on 09-02,
+before the seventeen 09-03 UI commits that are in the deployed, submitted build.
+So `T07-ARCHITECTURE.md` line 8 and the matrix were right all along.
+
+Fixed: `git fetch --tags --force` in the T06 repository. Left alone: this
+repository also carries a `t06-submission` tag at `1180c8d`, a local-only copy
+that `origin` does not have — it is what caused the confusion, and the handoff
+now says not to cite it.
+
+**The deploy has not happened.** Checked against the live app, not the notes:
+the root still serves `index-MZVl8FZ4.js`/`index-CGU0rIJc.css` — T06's deployed
+bundle, named in T06's own submission — and `/api/auth/me` and `/api/csrf` both
+answer 404 while `/api/live` and `/api/health` answer 200. The repository
+connection is still on T06, so none of handoff section 4 has run and the
+five-day clock has not started.
+
+Also recorded: the PostgreSQL pre-deploy command was pasted into Neon's SQL
+Editor and failed with `syntax error at or near "TEST_DATABASE_URL"`. It is a
+shell command, not SQL, and the handoff's version is bash syntax that PowerShell
+will not take either. The home handoff now carries the PowerShell form and says
+Neon is only where the connection string is copied from.
+
+New: `docs/process/T07-HANDOFF-2026-09-04-HOME.md` — continue-at-home handoff.
+It does not restate section 4's deploy order; it points at it.
+
+Commands run:
+
+- `backend/.venv/Scripts/python.exe -m pytest backend/tests` — 304 passed, 4 skipped.
+- `npm --prefix frontend test` — 71 passed.
+
 ## 2026-09-04 Section ⑥ sharpened — 14 accepted limitations
 
 Asked to add "no email verification" and "no password reset" to the guide's
