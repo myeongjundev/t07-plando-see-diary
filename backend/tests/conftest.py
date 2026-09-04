@@ -104,3 +104,70 @@ def client(app):
     assert browser.post("/api/auth/signup", json=credentials).status_code == 201
     assert browser.post("/api/auth/login", json=credentials).status_code == 200
     return browser
+
+
+# ---------------------------------------------------------------------------
+# The PostgreSQL-only tests drop every table on the database TEST_DATABASE_URL
+# names. That variable is typed by a person at a keyboard, usually while looking
+# at a dashboard that has the production connection string on it -- and the
+# deployed database holds the diary this project exists to keep.
+#
+# So it is checked rather than trusted. Three ways a target is refused, cheapest
+# first, and any one of them is enough.
+# ---------------------------------------------------------------------------
+
+import os  # noqa: E402
+
+from sqlalchemy import create_engine, inspect, text  # noqa: E402
+
+# Names that mean "this is the real one". Matched against the database name,
+# not the host: Neon branches share a host and differ by branch, and the
+# database name is what a copied production string carries.
+PRODUCTION_NAMES = frozenset({"neondb", "production", "prod", "main", "t06", "t07"})
+
+
+def refuse_production(url: str) -> None:
+    """Raise unless `url` is safe to drop every table on.
+
+    Not a fixture, so it can be called from module scope as well as a test, and
+    it raises rather than skipping: a skip here would read as "PostgreSQL not
+    configured" when what actually happened is "you pointed this at the diary".
+    """
+    if os.getenv("ALLOW_DESTRUCTIVE_TEST_DATABASE") == "1":
+        # The escape hatch exists so this file is never the reason a real check
+        # cannot run. Spelled out in full, so nobody sets it by reflex.
+        return
+
+    deployed = os.getenv("DATABASE_URL")
+    if deployed and url.strip() == deployed.strip():
+        raise RuntimeError(
+            "TEST_DATABASE_URL is the same as DATABASE_URL. These tests drop every "
+            "table; point them at a scratch database or a Neon child branch."
+        )
+
+    name = url.rsplit("/", 1)[-1].split("?")[0].lower()
+    if name in PRODUCTION_NAMES:
+        raise RuntimeError(
+            f"TEST_DATABASE_URL names the database {name!r}, which looks like the "
+            "deployed one. These tests drop every table. Create a Neon child branch "
+            "for them, or set ALLOW_DESTRUCTIVE_TEST_DATABASE=1 if you are certain."
+        )
+
+    # The last and least fallible check: ask the database whether it is empty.
+    # A name can be anything; rows are what would actually be lost.
+    engine = create_engine(url)
+    try:
+        tables = set(inspect(engine).get_table_names())
+        with engine.connect() as connection:
+            for table in ("plans", "users"):
+                if table not in tables:
+                    continue
+                rows = connection.execute(text(f"SELECT count(*) FROM {table}")).scalar_one()
+                if rows:
+                    raise RuntimeError(
+                        f"TEST_DATABASE_URL has {rows} rows in {table!r}. These tests drop "
+                        "every table, and that is somebody's diary. Point them at an empty "
+                        "database."
+                    )
+    finally:
+        engine.dispose()

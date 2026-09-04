@@ -20,7 +20,7 @@ from app.auth.cookies import ACCESS_COOKIE, CSRF_COOKIE, REFRESH_COOKIE, REFRESH
 from app.extensions import db
 from app.models import RefreshSession, SecurityEvent
 from app.services.sessions import PASSWORD_CHANGE
-from conftest import browser_for, copy_session
+from conftest import browser_for, copy_session, refuse_production
 from test_t07_signup_login import EMAIL, PASSWORD, login, signup
 
 KEY = "synthetic-test-signing-key-not-a-real-secret-long-enough-for-hs256"
@@ -225,6 +225,10 @@ def test_a_refresh_in_flight_cannot_survive_the_change_on_postgresql():
 
 
 def run_the_race(database_url: str, *, fresh: bool = False) -> None:
+    # `fresh` is the PostgreSQL path, and it drops every table on the way in
+    # and out. Confirm the target is not the deployed database first.
+    if fresh:
+        refuse_production(database_url)
     app = create_app({"TESTING": True, "SQLALCHEMY_DATABASE_URI": database_url})
     try:
         with app.app_context():

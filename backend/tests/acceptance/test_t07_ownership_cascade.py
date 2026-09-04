@@ -25,8 +25,19 @@ from sqlalchemy import inspect, select, text
 from app import create_app
 from app.extensions import db
 from app.models import Plan, Reflection, Task, User
+from conftest import refuse_production
 
 POSTGRES_URL = os.getenv("TEST_DATABASE_URL")
+
+
+def postgres_app():
+    """An app on the PostgreSQL target, once it is confirmed safe to wipe.
+
+    These tests drop every table. `refuse_production` is what stands between
+    that and a connection string copied off the Neon dashboard.
+    """
+    refuse_production(POSTGRES_URL)
+    return create_app({"TESTING": True, "SQLALCHEMY_DATABASE_URI": POSTGRES_URL})
 
 # Foreign keys that must carry an explicit delete action for the account-delete
 # cascade to reach the bottom. Value is the action the design calls for.
@@ -65,7 +76,7 @@ def test_every_ownership_foreign_key_declares_a_delete_action():
 
 @pytest.mark.skipif(not POSTGRES_URL, reason="set TEST_DATABASE_URL to check the deployed engine")
 def test_deleting_a_user_removes_their_data_on_postgresql():
-    app = create_app({"TESTING": True, "SQLALCHEMY_DATABASE_URI": POSTGRES_URL})
+    app = postgres_app()
     with app.app_context():
         db.drop_all()
         db.create_all()
@@ -115,7 +126,7 @@ def test_next_plan_link_is_cleared_rather_than_deleting_the_reflection():
     delete a reflection because the plan it suggested was removed, which loses
     a record the user wrote.
     """
-    app = create_app({"TESTING": True, "SQLALCHEMY_DATABASE_URI": POSTGRES_URL})
+    app = postgres_app()
     with app.app_context():
         db.drop_all()
         db.create_all()
