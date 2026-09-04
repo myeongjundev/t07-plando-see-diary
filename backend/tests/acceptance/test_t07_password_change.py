@@ -20,12 +20,12 @@ from app.auth.cookies import ACCESS_COOKIE, CSRF_COOKIE, REFRESH_COOKIE, REFRESH
 from app.extensions import db
 from app.models import RefreshSession, SecurityEvent
 from app.services.sessions import PASSWORD_CHANGE
-from conftest import browser_for, copy_session, refuse_production
+from conftest import browser_for, copy_session, postgres_url_or_skip, refuse_production
 from test_t07_signup_login import EMAIL, PASSWORD, login, signup
 
 KEY = "synthetic-test-signing-key-not-a-real-secret-long-enough-for-hs256"
 NEW_PASSWORD = "합성-새-비밀번호-8d31"
-POSTGRES_URL = os.getenv("TEST_DATABASE_URL")
+POSTGRES_URL = postgres_url_or_skip(os.getenv("TEST_DATABASE_URL"))
 
 
 @pytest.fixture(autouse=True)

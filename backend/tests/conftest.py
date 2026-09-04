@@ -120,9 +120,11 @@ import os  # noqa: E402
 
 from sqlalchemy import create_engine, inspect, text  # noqa: E402
 
-# Names that mean "this is the real one". Matched against the database name,
-# not the host: Neon branches share a host and differ by branch, and the
-# database name is what a copied production string carries.
+from app.config import normalize_database_url  # noqa: E402
+
+# Names that mean "this is the real one" -- used only when the database cannot be
+# read. Neon child branches keep the parent's database name (`neondb`), so the
+# name alone must never be the thing that refuses a legitimate scratch branch.
 PRODUCTION_NAMES = frozenset({"neondb", "production", "prod", "main", "t06", "t07"})
 
 
@@ -132,6 +134,12 @@ def refuse_production(url: str) -> None:
     Not a fixture, so it can be called from module scope as well as a test, and
     it raises rather than skipping: a skip here would read as "PostgreSQL not
     configured" when what actually happened is "you pointed this at the diary".
+
+    **Emptiness is the authority, not the name.** A database with no diary in it
+    is safe to drop whatever it is called, and one with a diary in it is not
+    safe however harmless the name looks. The name is only consulted when the
+    rows cannot be counted -- an unreachable database is exactly when a guess is
+    all that is left, and the guess should be the cautious one.
     """
     if os.getenv("ALLOW_DESTRUCTIVE_TEST_DATABASE") == "1":
         # The escape hatch exists so this file is never the reason a real check
@@ -146,16 +154,7 @@ def refuse_production(url: str) -> None:
         )
 
     name = url.rsplit("/", 1)[-1].split("?")[0].lower()
-    if name in PRODUCTION_NAMES:
-        raise RuntimeError(
-            f"TEST_DATABASE_URL names the database {name!r}, which looks like the "
-            "deployed one. These tests drop every table. Create a Neon child branch "
-            "for them, or set ALLOW_DESTRUCTIVE_TEST_DATABASE=1 if you are certain."
-        )
-
-    # The last and least fallible check: ask the database whether it is empty.
-    # A name can be anything; rows are what would actually be lost.
-    engine = create_engine(url)
+    engine = create_engine(normalize_database_url(url))
     try:
         tables = set(inspect(engine).get_table_names())
         with engine.connect() as connection:
@@ -166,8 +165,30 @@ def refuse_production(url: str) -> None:
                 if rows:
                     raise RuntimeError(
                         f"TEST_DATABASE_URL has {rows} rows in {table!r}. These tests drop "
-                        "every table, and that is somebody's diary. Point them at an empty "
-                        "database."
+                        "every table, and that is somebody's diary. Use a Neon branch made "
+                        "with 'Branch schema only', or an empty database."
                     )
+    except RuntimeError:
+        raise
+    except Exception as unreachable:
+        # Could not look. Fall back to the name, and prefer refusing.
+        if name in PRODUCTION_NAMES:
+            raise RuntimeError(
+                f"TEST_DATABASE_URL names {name!r} and could not be read to check whether "
+                f"it is empty ({unreachable.__class__.__name__}). These tests drop every "
+                "table, so this is refused rather than guessed at."
+            ) from None
+        raise
     finally:
         engine.dispose()
+
+
+def postgres_url_or_skip(raw: str | None) -> str:
+    """The PostgreSQL target, spelled for the driver this project installs.
+
+    Callers pass `os.getenv("TEST_DATABASE_URL")` -- a value copied from a
+    provider's dashboard, which will say `postgresql://`. Rewriting it here
+    means a person setting the variable gets the tests they asked for rather
+    than an import error naming a package they never chose.
+    """
+    return normalize_database_url(raw) if raw else ""

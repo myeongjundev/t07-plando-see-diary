@@ -25,9 +25,9 @@ from sqlalchemy import inspect, select, text
 from app import create_app
 from app.extensions import db
 from app.models import Plan, Reflection, Task, User
-from conftest import refuse_production
+from conftest import postgres_url_or_skip, refuse_production
 
-POSTGRES_URL = os.getenv("TEST_DATABASE_URL")
+POSTGRES_URL = postgres_url_or_skip(os.getenv("TEST_DATABASE_URL"))
 
 
 def postgres_app():
