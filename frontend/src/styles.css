@@ -413,6 +413,34 @@ h1 {
   color: var(--ink-2);
 }
 
+/* 충족·불충족은 색만으로 구분하지 않는다. 글자가 「✓ 8자 이상」과 「8자 이상이어야
+   합니다」로 서로 다르고, 색은 그 위에 얹는 두 번째 신호일 뿐이다. */
+.auth-panel .field-hint.met { color: var(--good); font-weight: 500; }
+.auth-panel .field-hint.unmet { color: var(--warn); font-weight: 500; }
+
+.password-field { position: relative; display: grid; }
+
+/* 버튼이 글자를 가리지 않게 오른쪽을 비워 둔다. 「가리기」가 「보기」보다 넓으므로
+   넓은 쪽에 맞춘다 — 토글할 때 입력 칸의 글자가 움직이면 안 된다. */
+.password-field input { padding-right: 4.5rem; }
+
+.reveal {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  border: 1px solid transparent;
+  border-radius: var(--r-ctl);
+  background: none;
+  color: var(--ink-2);
+  padding: 4px 8px;
+  font-size: var(--t-sm);
+  font-weight: 700;
+}
+
+.reveal:hover { color: var(--ink); background: var(--accent-soft); }
+.reveal:focus-visible { border-color: var(--accent); color: var(--ink); }
+
 .auth-switch {
   margin: var(--s4) 0 0;
   font-size: var(--t-sm);

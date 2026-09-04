@@ -5,6 +5,24 @@
  *
  * Open without a session on purpose: C03 asks that a reviewer with no account
  * can reach this far. Everything past it is gated.
+ *
+ * What this screen deliberately does not have, because both would undo work
+ * done elsewhere rather than merely being unbuilt:
+ *
+ * - **A live "is this address taken" check.** Signup's 409 already tells a
+ *   caller that one address exists, which C98 requires and design section 11
+ *   records as a limitation. An endpoint answering that on every keystroke
+ *   turns a single admission into bulk enumeration, and wastes everything the
+ *   login path spends to hide the same fact -- the dummy Argon2 verification,
+ *   the identical wording and status (C99), and a throttle that refuses a
+ *   locked caller whether or not the account is real.
+ * - **Composition rules (letters, digits, symbols).** Absent for the reason
+ *   written at MIN_PASSWORD_CHARS in app/services/accounts.py: they push people
+ *   toward predictable substitutions and shorter passwords. The floor is a
+ *   length, and what costs an online guesser is the throttle.
+ *
+ * Everything below is advisory. The server validates the same things again, and
+ * none of these checks is what decides whether an account is created.
  */
 import { FormEvent, useState } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
@@ -50,6 +68,8 @@ export default function CredentialsPage({ mode }: Props) {
   const location = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmation, setConfirmation] = useState("");
+  const [revealed, setRevealed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -60,8 +80,23 @@ export default function CredentialsPage({ mode }: Props) {
 
   const returnTo = (location.state as { from?: string } | null)?.from ?? "/app";
 
+  // Signup only, and only once the second field has something in it: telling
+  // someone their passwords do not match before they have typed the first
+  // character of the second one is noise, not help.
+  const confirming = mode === "signup" && confirmation.length > 0;
+  const mismatched = confirming && confirmation !== password;
+  const longEnough = password.length >= MIN_PASSWORD_CHARS;
+
   async function submit(event: FormEvent) {
     event.preventDefault();
+    if (mismatched) {
+      // Caught here so a typo in the confirmation cannot become an account with
+      // a password its owner cannot reproduce. The server never sees this field
+      // -- there is nothing for it to check -- which is also why this is not a
+      // security check and nothing downstream may rely on it.
+      setMessage("비밀번호가 일치하지 않습니다.");
+      return;
+    }
     setBusy(true);
     setMessage("");
     try {
@@ -79,7 +114,12 @@ export default function CredentialsPage({ mode }: Props) {
       );
       // Never keep the typed password around after a failure. It is the one
       // value on this page worth clearing, and a retry should be deliberate.
+      // Re-hiding goes with that: a revealed field left on screen after a
+      // failed attempt is a password in plain sight on a screen whose owner has
+      // stopped looking at it.
       setPassword("");
+      setConfirmation("");
+      setRevealed(false);
     } finally {
       setBusy(false);
     }
@@ -118,25 +158,64 @@ export default function CredentialsPage({ mode }: Props) {
           </label>
           <label>
             비밀번호
-            <input
-              type="password"
-              name="password"
-              autoComplete={mode === "signup" ? "new-password" : "current-password"}
-              minLength={mode === "signup" ? MIN_PASSWORD_CHARS : undefined}
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              required
-            />
+            <span className="password-field">
+              <input
+                type={revealed ? "text" : "password"}
+                name="password"
+                autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                minLength={mode === "signup" ? MIN_PASSWORD_CHARS : undefined}
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                required
+              />
+              {/* type=button, or it submits. A button in a form defaults to
+                  submit, and the bug that makes is a signup attempt fired by
+                  someone who only wanted to look at what they had typed. */}
+              <button
+                type="button"
+                className="reveal"
+                onClick={() => setRevealed((shown) => !shown)}
+                aria-pressed={revealed}
+                aria-label={revealed ? "비밀번호 가리기" : "비밀번호 보기"}
+              >
+                {revealed ? "가리기" : "보기"}
+              </button>
+            </span>
           </label>
           {mode === "signup" && (
-            <p className="field-hint">비밀번호는 {MIN_PASSWORD_CHARS}자 이상이어야 합니다.</p>
+            // aria-live, because the text changes under a field being typed in:
+            // announced only on focus, it would still be saying "8자 이상이어야
+            // 합니다" long after that stopped being true.
+            <p className={longEnough ? "field-hint met" : "field-hint"} aria-live="polite">
+              {longEnough
+                ? `✓ ${MIN_PASSWORD_CHARS}자 이상`
+                : `비밀번호는 ${MIN_PASSWORD_CHARS}자 이상이어야 합니다.`}
+            </p>
+          )}
+          {mode === "signup" && (
+            <label>
+              비밀번호 확인
+              <input
+                type={revealed ? "text" : "password"}
+                name="passwordConfirmation"
+                autoComplete="new-password"
+                value={confirmation}
+                onChange={(event) => setConfirmation(event.target.value)}
+                required
+              />
+            </label>
+          )}
+          {confirming && (
+            <p className={mismatched ? "field-hint unmet" : "field-hint met"} aria-live="polite">
+              {mismatched ? "비밀번호가 일치하지 않습니다." : "✓ 비밀번호가 일치합니다."}
+            </p>
           )}
           {message && (
             <p className="message" role="alert">
               {message}
             </p>
           )}
-          <button className="primary" disabled={busy}>
+          <button className="primary" disabled={busy || mismatched}>
             {busy ? copy.working : copy.submit}
           </button>
         </form>

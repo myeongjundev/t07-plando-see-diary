@@ -2,6 +2,53 @@
 
 Updated: 2026-09-04 KST
 
+## 2026-09-04 Signup form — the help that does not cost anything
+
+A mockup was proposed with a live email-availability check, a nickname, and
+letter/digit/symbol rules. Three of its six items were added; three were not,
+and the reasons are now in the component's header rather than in a chat.
+
+Added (frontend only — no endpoint, no schema, no criterion touched):
+
+- A confirmation field on signup, checked in the browser. The server never sees
+  it, so this is the only place a mistyped password can be caught, and it is
+  explicitly not a security check.
+- One reveal toggle for both password fields. `type="button"`, or looking at
+  what you typed would fire a signup attempt. Re-hidden and both fields cleared
+  after a refused attempt.
+- A live length hint that changes text, not only colour.
+
+Refused, with the reasoning written into `CredentialsPage.tsx`:
+
+- **A live "is this address taken" check.** Signup's 409 already admits that one
+  address exists — C98 requires the refusal, and design section 11 records the
+  leak. An endpoint answering it per keystroke turns that into bulk enumeration
+  and wastes what the login path spends to hide the same fact: the dummy Argon2
+  verification, the identical wording and status (C99), and the new throttle,
+  which refuses a locked caller whether or not the account is real.
+- **Composition rules.** Deliberately absent since step 3, for the reason at
+  `MIN_PASSWORD_CHARS` in `accounts.py` (NIST SP 800-63B). The floor is a
+  length; what costs an online guesser is the throttle.
+- **A nickname.** No column, and it would need a migration, an export-contract
+  classification, and a place in the claim → NOT NULL deploy order. No T07
+  criterion asks for one.
+
+Terms/privacy/marketing checkboxes were also in the mockup. Not added: T07 does
+not ask for them, and doing it properly means storing consent time and version.
+
+New: `frontend/src/auth/signup-form.test.tsx`, 9 tests.
+
+Commands run:
+
+- `npm --prefix frontend test` — **28 passed** (was 19).
+- `npm --prefix frontend run build` — built.
+- `backend/.venv/Scripts/python.exe -m pytest backend/tests` — 263 passed, 3 skipped.
+- `backend/.venv/Scripts/python.exe backend/scripts/audit_secrets.py` — 0 findings.
+- Both themes checked on the real build at `local_server.py` via headless
+  Chrome over CDP; the browser panel reports a 0×0 viewport on this machine.
+
+Handoff target: unchanged — step 17, the password-change endpoint.
+
 ## 2026-09-04 Step 16 — idle and absolute expiry, now tested
 
 - The logic was already in `app/services/sessions.py` and had been since step 4;
