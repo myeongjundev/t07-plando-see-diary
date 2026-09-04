@@ -418,28 +418,95 @@ h1 {
 .auth-panel .field-hint.met { color: var(--good); font-weight: 500; }
 .auth-panel .field-hint.unmet { color: var(--warn); font-weight: 500; }
 
+/* 비밀번호 강도. 칸 세 개와 한 줄. 등급 이름이 글자로 있으므로 색은 두 번째 신호일
+   뿐이고, 색을 못 보아도 「약함·보통·강함」은 읽힌다. */
+.strength {
+  display: grid;
+  gap: var(--s2);
+  margin: calc(var(--s3) * -1) 0 0;
+}
+
+/* 실시간 체크리스트. 충족 여부를 ✓/○ 기호로도 구분한다 — 색만으로 전하지 않는다. */
+.checklist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2) var(--s3);
+  margin: calc(var(--s3) * -1) 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--t-sm);
+}
+
+.checklist li { display: inline-flex; align-items: center; gap: 5px; }
+.checklist li.met { color: var(--good); font-weight: 500; }
+.checklist li.unmet { color: var(--ink-3); }
+
+.checklist em {
+  font-style: normal;
+  font-size: var(--t-2xs);
+  font-weight: 700;
+  color: var(--ink-3);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0 5px;
+}
+
+/* 화면에는 없고 낭독기에만 있는 글자. 체크리스트의 ✓·○는 aria-hidden이라
+   「충족·미충족」을 여기서 말한다. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.strength-bars { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s1); }
+
+.strength-bars span {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--line);
+  transition: background var(--ease);
+}
+
+.strength-bars.level-1 span:nth-child(1) { background: var(--crit); }
+.strength-bars.level-2 span:nth-child(-n + 2) { background: var(--warn); }
+.strength-bars.level-3 span { background: var(--good); }
+
+.strength .field-hint { margin: 0; }
+.strength .field-hint strong { color: var(--ink); font-weight: 700; }
+
 .password-field { position: relative; display: grid; }
 
-/* 버튼이 글자를 가리지 않게 오른쪽을 비워 둔다. 「가리기」가 「보기」보다 넓으므로
-   넓은 쪽에 맞춘다 — 토글할 때 입력 칸의 글자가 움직이면 안 된다. */
-.password-field input { padding-right: 4.5rem; }
+/* 아이콘이 글자를 가리지 않게 오른쪽을 비워 둔다. 아이콘 크기는 켜고 끌 때 같으므로
+   입력 칸의 글자가 움직이지 않는다. */
+.password-field input { padding-right: 2.75rem; }
 
 .reveal {
   position: absolute;
   top: 50%;
-  right: 6px;
+  right: 4px;
   transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* 44px 미만이면 손가락으로 누르기 어렵다. 아이콘은 18px이고 나머지는 여백이다. */
+  width: 36px;
+  height: 36px;
   border: 1px solid transparent;
   border-radius: var(--r-ctl);
   background: none;
-  color: var(--ink-2);
-  padding: 4px 8px;
-  font-size: var(--t-sm);
-  font-weight: 700;
+  color: var(--ink-3);
 }
 
 .reveal:hover { color: var(--ink); background: var(--accent-soft); }
 .reveal:focus-visible { border-color: var(--accent); color: var(--ink); }
+.reveal[aria-pressed="true"] { color: var(--accent); }
 
 .auth-switch {
   margin: var(--s4) 0 0;

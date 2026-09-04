@@ -22,11 +22,27 @@ from app.security.passwords import (
     verify_password,
 )
 
-# Eight is NIST SP 800-63B's floor for a user-chosen secret. Nothing above it is
-# imposed -- no character classes, no forced mixture. Those rules push people
-# toward predictable substitutions and shorter passwords, and the throttling in
-# design section 6 is what actually costs an online guesser.
+# Eight is NIST SP 800-63B's floor for a user-chosen secret.
 MIN_PASSWORD_CHARS = 8
+
+# A letter and a digit, on signup only. This is a deliberate departure from
+# 800-63B, which advises against composition rules because they push people
+# toward predictable substitutions -- `Password1!` satisfies every rule anyone
+# has ever written and is on every guessing list. It is here because the product
+# asks for it, and the cost is written down rather than hidden: it belongs in
+# the guide's section ⑥ alongside the other accepted limitations.
+#
+# Two things keep the cost small. Uppercase and symbols are *not* required, so
+# the rule does not dictate a shape; and what actually costs an online guesser
+# is still the throttle in design section 6, not this.
+LETTER_PATTERN = re.compile(r"[A-Za-z]")
+DIGIT_PATTERN = re.compile(r"[0-9]")
+
+# No allowlist of permitted characters, deliberately. Rejecting a character
+# someone chose is a rule with no benefit -- the value is hashed, never
+# interpolated anywhere -- and every such list eventually rejects a good
+# passphrase. The only cap is MAX_PASSWORD_BYTES, which is a denial-of-service
+# guard on the hasher, not a policy.
 
 # Deliberately permissive. Address syntax is far stranger than most patterns
 # admit, and the only real proof that an address works is sending to it, which
@@ -48,8 +64,17 @@ class Credentials:
     password: str
 
 
-def parse_credentials(payload: object) -> Credentials:
-    """Validate a signup or login body into a normalized pair."""
+def parse_credentials(payload: object, *, enforce_policy: bool = False) -> Credentials:
+    """Validate a signup or login body into a normalized pair.
+
+    `enforce_policy` is signup only, and the asymmetry is the point. Applying
+    the composition rules on login would refuse an account created before them
+    -- including the one the T06 data was claimed into, whose password was
+    chosen by a person and never passed through here -- and would do it with a
+    401 that says the credentials were wrong. It would also be readable: an
+    address that fails validation answers faster than one that reaches Argon2,
+    which is the timing difference `dummy_verify` exists to erase.
+    """
     errors: dict[str, str] = {}
     data = payload if isinstance(payload, dict) else {}
     raw_email = data.get("email")
@@ -66,6 +91,12 @@ def parse_credentials(payload: object) -> Credentials:
         errors["password"] = f"비밀번호는 {MIN_PASSWORD_CHARS}자 이상이어야 합니다."
     elif len(raw_password.encode("utf-8")) > MAX_PASSWORD_BYTES:
         errors["password"] = "비밀번호가 너무 깁니다."
+    elif enforce_policy and not (
+        LETTER_PATTERN.search(raw_password) and DIGIT_PATTERN.search(raw_password)
+    ):
+        # One message for both halves. Saying which of the two is missing is no
+        # more useful than saying both, and the shorter rule is easier to act on.
+        errors["password"] = "비밀번호에 영문과 숫자를 함께 넣어 주세요."
 
     if errors:
         raise AccountValidationError(errors)

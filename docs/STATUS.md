@@ -2,6 +2,70 @@
 
 Updated: 2026-09-04 KST
 
+## 2026-09-04 Password strength meter, and a minimum policy on both sides
+
+Implemented to the written spec. Two things it changes are decisions this
+project had previously made the other way, so they are recorded as reversals
+rather than as new work.
+
+**The server now enforces a composition rule on signup.** Eight characters, a
+letter, and a digit — `parse_credentials(..., enforce_policy=True)`, from
+`POST /api/auth/signup` only. This departs from NIST SP 800-63B, which advises
+against composition rules because `Password1!` satisfies every one ever written
+and is on every guessing list. It is here because the product asked for it, and
+the cost belongs in the guide's section ⑥ next to the other accepted
+limitations. Uppercase and symbols are still *not* required — required
+composition dictates a shape, and that shape is the one on the lists.
+
+**Login does not apply it, deliberately.** Applied there it would lock out any
+account created earlier — the one the T06 data is claimed into among them,
+whose password never passed through `parse_credentials` — while answering that
+the credentials were wrong. It would also answer faster than a password that
+reaches Argon2, which is the timing difference `dummy_verify` erases.
+
+**The signup button is now gated in the browser.** Email shape, minimum policy,
+strength at least 보통, and a matching confirmation. The login button is not
+gated by any of it, for the reason above. There are no required terms in this
+product, so the spec's "필수 약관 동의 완료" is vacuous here; consent checkboxes
+were not added, since storing consent time and version is a schema change
+nobody has asked for.
+
+Frontend, new `frontend/src/auth/passwordStrength.ts`:
+
+- 약함 · 보통 · 강함 with a three-segment bar and the grade in words. Colour is
+  never the only signal, here or in the checklist.
+- Live checklist: 8자 이상 · 영문 · 숫자 (policy) and 특수문자 · 12자 이상
+  (권장, badged so five lines do not read as five requirements).
+- Length is decisive: `Abc!1234` has all four classes in eight characters and
+  is not 강함, which the spec called out by name. Hangul counts as a class, or
+  a Korean passphrase — the best password anyone here is likely to choose —
+  would grade worst.
+- `looksObvious` catches repeats, runs of five in the alphabet/digits/keyboard
+  rows, and a small common-word list, so `qwerty123` and `Password1!` are 약함
+  despite passing every rule. Its limits are real: no breach list, no personal
+  data, so `Myeongjun2026!` grades 강함. Section ⑥.
+- zxcvbn was considered and not adopted: its dictionaries would roughly double
+  a 296KB bundle for an advisory display, and what actually costs an online
+  guesser here is the server-side throttle, which already exists. Written into
+  the module header.
+- Per-field eye toggles, `type="button"` (a submit-by-default button here means
+  a signup attempt fired by someone who only wanted to look at what they typed).
+
+Commands run:
+
+- `npm --prefix frontend test` — **61 passed** (was 28); 26 in
+  `passwordStrength.test.ts`, 16 in `signup-form.test.tsx`.
+- `npm --prefix frontend run build` — built, 296.12 kB.
+- `backend/.venv/Scripts/python.exe -m pytest backend/tests` — **267 passed, 3
+  skipped** (was 263); four new signup-policy tests.
+- `backend/.venv/Scripts/python.exe backend/scripts/audit_secrets.py` — 0 findings.
+- 약함·강함 두 상태를 실제 빌드본에서 확인 (headless Chrome over CDP).
+
+Handoff target: unchanged — step 17, the password-change endpoint. Note that it
+must apply the same minimum policy to the new password, and that the guide's
+section ⑥ now owes two entries: the composition rule, and what the meter cannot
+see.
+
 ## 2026-09-04 Signup form — the help that does not cost anything
 
 A mockup was proposed with a live email-availability check, a nickname, and

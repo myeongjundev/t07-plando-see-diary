@@ -13,6 +13,7 @@ from threading import Barrier
 from app import create_app
 from app.extensions import db
 from app.models import User
+from app.security.passwords import hash_password
 
 EMAIL = "synthetic-user@example.invalid"
 PASSWORD = "합성-비밀번호-9f2a"
@@ -145,6 +146,48 @@ def test_signup_rejects_a_password_below_the_floor(client):
     response = signup(client, password="짧다")
     assert response.status_code == 400
     assert "password" in response.get_json()["error"]["details"]
+
+
+def test_signup_requires_a_letter_and_a_digit(client):
+    """The minimum policy, checked where it counts rather than in the browser."""
+    # All long enough, so the length rule is not what refuses them.
+    for bad in ("영문도숫자도없는비밀번호", "12345678901", "!!!!!!!!!!!!"):
+        response = signup(client, password=bad)
+        assert response.status_code == 400, bad
+        assert response.get_json()["error"]["details"]["password"] == (
+            "비밀번호에 영문과 숫자를 함께 넣어 주세요."
+        )
+
+
+def test_signup_does_not_require_uppercase_or_a_symbol(client):
+    """Required composition dictates a shape, and the shape is `Password1!`.
+
+    The frontend recommends both and neither is imposed here, which is the whole
+    difference between guidance and a rule.
+    """
+    assert signup(client, password="diarydiary9").status_code == 201
+
+
+def test_signup_accepts_any_character_someone_chose(client):
+    """No allowlist. The value is hashed and never interpolated anywhere."""
+    assert signup(client, password="계획 대 실제 diary 2026 · ¡½☂").status_code == 201
+
+
+def test_login_does_not_apply_the_signup_policy(app):
+    """An account made before the rule must keep working.
+
+    Applied on login, the rule would lock out the account the T06 data was
+    claimed into -- its password was chosen by a person and never went through
+    parse_credentials -- and would say the credentials were wrong while doing
+    it. It would also answer faster than a password that reaches Argon2, which
+    is the timing difference dummy_verify exists to erase.
+    """
+    legacy = "영문이나숫자가없는옛비밀번호"
+    with app.app_context():
+        db.session.add(User(email=EMAIL, password_hash=hash_password(legacy)))
+        db.session.commit()
+    browser = app.test_client()
+    assert browser.post("/api/auth/login", json={"email": EMAIL, "password": legacy}).status_code == 200
 
 
 def test_signup_rejects_a_malformed_address(client):

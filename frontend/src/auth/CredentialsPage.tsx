@@ -29,12 +29,13 @@ import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { ApiError } from "../api/http";
 import { login, signup } from "../api/auth";
 import { useSession } from "./SessionProvider";
+import { MIN_LENGTH, assess } from "./passwordStrength";
 import ThemeToggle from "../ThemeToggle";
 
-// Matches MIN_PASSWORD_CHARS in app/services/accounts.py. Stated here so the
-// user reads the rule before the server refuses them, not instead of it -- the
-// server still checks, and this text is only ever advisory.
-const MIN_PASSWORD_CHARS = 8;
+// Mirrors EMAIL_PATTERN in app/services/accounts.py, and is deliberately just
+// as permissive. A stricter one here would disable the button for an address
+// the server would have accepted, which is a rejection with no appeal.
+const EMAIL_PATTERN = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
 interface Props {
   mode: "login" | "signup";
@@ -61,6 +62,47 @@ const COPY = {
   },
 } as const;
 
+/** 눈 아이콘 하나. 칸마다 하나씩 붙는다.
+ *
+ * `type="button"`이 이 컴포넌트에서 가장 중요한 한 줄이다. 폼 안의 `<button>`은
+ * 기본이 submit이라, 이게 없으면 「내가 뭘 쳤나」 보려던 클릭이 가입 시도가 된다.
+ */
+function RevealButton({
+  shown,
+  onToggle,
+  label,
+}: {
+  shown: boolean;
+  onToggle: () => void;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      className="reveal"
+      onClick={onToggle}
+      aria-pressed={shown}
+      aria-label={shown ? `${label} 가리기` : `${label} 보기`}
+    >
+      {/* 아이콘은 장식이라 aria-hidden. 무엇을 하는 단추인지는 aria-label이 말한다. */}
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+        <path
+          d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <circle cx="12" cy="12" r="2.8" fill="none" stroke="currentColor" strokeWidth="1.8" />
+        {shown && (
+          <path d="M4 20 20 4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        )}
+      </svg>
+    </button>
+  );
+}
+
 export default function CredentialsPage({ mode }: Props) {
   const copy = COPY[mode];
   const { status, signedIn } = useSession();
@@ -69,7 +111,10 @@ export default function CredentialsPage({ mode }: Props) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
+  // One toggle per field, as asked. They are independent because the reason to
+  // reveal one is usually to compare it against the other still hidden.
   const [revealed, setRevealed] = useState(false);
+  const [revealedConfirmation, setRevealedConfirmation] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -85,7 +130,18 @@ export default function CredentialsPage({ mode }: Props) {
   // character of the second one is noise, not help.
   const confirming = mode === "signup" && confirmation.length > 0;
   const mismatched = confirming && confirmation !== password;
-  const longEnough = password.length >= MIN_PASSWORD_CHARS;
+  const matched = confirming && !mismatched;
+
+  // Assessed from the first character, not from the floor: the use of a meter
+  // is that it moves while a password is being chosen, and one that appears
+  // only after the field is already valid arrives too late to change anything.
+  const grade = assess(password);
+  const signupReady =
+    EMAIL_PATTERN.test(email.trim()) && grade.meetsPolicy && grade.level >= 2 && matched;
+  // On the login screen none of this applies. Gating that button on today's
+  // policy would lock out an account created under yesterday's -- the one the
+  // T06 data was claimed into among them.
+  const ready = mode === "signup" ? signupReady : email.length > 0 && password.length > 0;
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -120,6 +176,7 @@ export default function CredentialsPage({ mode }: Props) {
       setPassword("");
       setConfirmation("");
       setRevealed(false);
+      setRevealedConfirmation(false);
     } finally {
       setBusy(false);
     }
@@ -163,46 +220,70 @@ export default function CredentialsPage({ mode }: Props) {
                 type={revealed ? "text" : "password"}
                 name="password"
                 autoComplete={mode === "signup" ? "new-password" : "current-password"}
-                minLength={mode === "signup" ? MIN_PASSWORD_CHARS : undefined}
+                minLength={mode === "signup" ? MIN_LENGTH : undefined}
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 required
               />
-              {/* type=button, or it submits. A button in a form defaults to
-                  submit, and the bug that makes is a signup attempt fired by
-                  someone who only wanted to look at what they had typed. */}
-              <button
-                type="button"
-                className="reveal"
-                onClick={() => setRevealed((shown) => !shown)}
-                aria-pressed={revealed}
-                aria-label={revealed ? "비밀번호 가리기" : "비밀번호 보기"}
-              >
-                {revealed ? "가리기" : "보기"}
-              </button>
+              <RevealButton
+                shown={revealed}
+                onToggle={() => setRevealed((on) => !on)}
+                label="비밀번호"
+              />
             </span>
           </label>
-          {mode === "signup" && (
-            // aria-live, because the text changes under a field being typed in:
-            // announced only on focus, it would still be saying "8자 이상이어야
-            // 합니다" long after that stopped being true.
-            <p className={longEnough ? "field-hint met" : "field-hint"} aria-live="polite">
-              {longEnough
-                ? `✓ ${MIN_PASSWORD_CHARS}자 이상`
-                : `비밀번호는 ${MIN_PASSWORD_CHARS}자 이상이어야 합니다.`}
-            </p>
+
+          {mode === "signup" && password.length > 0 && (
+            <div className="strength">
+              {/* aria-hidden: 세 칸은 바로 옆 글자를 그림으로 옮긴 것뿐이라, 화면
+                  낭독기에 「채워짐 채워짐 빔」이 들릴 이유가 없다. 등급은 글자로
+                  읽힌다 — 색만으로 상태를 전하지 않는다. */}
+              <div className={`strength-bars level-${grade.level}`} aria-hidden="true">
+                <span /> <span /> <span />
+              </div>
+              {/* aria-live, because this changes under a field being typed in.
+                  Announced only on focus, it would still be reading the grade
+                  from four characters ago. */}
+              <p className="field-hint" aria-live="polite">
+                비밀번호 강도: <strong>{grade.strength}</strong>
+                {grade.advice && ` · ${grade.advice}`}
+              </p>
+            </div>
           )}
+
+          {mode === "signup" && (
+            <ul className="checklist">
+              {grade.requirements.map((rule) => (
+                <li key={rule.id} className={rule.met ? "met" : "unmet"}>
+                  <span aria-hidden="true">{rule.met ? "✓" : "○"}</span>
+                  {rule.label}
+                  {/* 권장 항목은 못 채워도 가입된다. 그 사실이 목록에 적혀 있지
+                      않으면 다섯 줄이 전부 요구사항으로 읽힌다. */}
+                  {rule.recommended && <em>권장</em>}
+                  <span className="sr-only">{rule.met ? " 충족" : " 미충족"}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+
           {mode === "signup" && (
             <label>
               비밀번호 확인
-              <input
-                type={revealed ? "text" : "password"}
-                name="passwordConfirmation"
-                autoComplete="new-password"
-                value={confirmation}
-                onChange={(event) => setConfirmation(event.target.value)}
-                required
-              />
+              <span className="password-field">
+                <input
+                  type={revealedConfirmation ? "text" : "password"}
+                  name="passwordConfirmation"
+                  autoComplete="new-password"
+                  value={confirmation}
+                  onChange={(event) => setConfirmation(event.target.value)}
+                  required
+                />
+                <RevealButton
+                  shown={revealedConfirmation}
+                  onToggle={() => setRevealedConfirmation((on) => !on)}
+                  label="비밀번호 확인"
+                />
+              </span>
             </label>
           )}
           {confirming && (
@@ -215,9 +296,17 @@ export default function CredentialsPage({ mode }: Props) {
               {message}
             </p>
           )}
-          <button className="primary" disabled={busy || mismatched}>
+          <button className="primary" disabled={busy || !ready}>
             {busy ? copy.working : copy.submit}
           </button>
+          {mode === "signup" && !ready && !busy && (
+            // A disabled button with no explanation is a dead end. The list and
+            // the meter above say what is missing; this says that they are the
+            // reason the button will not move.
+            <p className="field-hint" aria-live="polite">
+              위 조건을 모두 채우면 가입할 수 있습니다.
+            </p>
+          )}
         </form>
         <p className="auth-switch">
           {copy.otherPrompt} <Link to={copy.otherPath}>{copy.otherLabel}</Link>

@@ -84,7 +84,10 @@ def signup():
     if refusal:
         return error_response(refusal[0], status=refusal[1])
     try:
-        credentials = parse_credentials(request.get_json(silent=True))
+        # The minimum policy is enforced here and not on login. The frontend
+        # checks the same three rules while someone types, and this is the check
+        # that decides -- a browser is not where a policy lives.
+        credentials = parse_credentials(request.get_json(silent=True), enforce_policy=True)
     except AccountValidationError as exc:
         return error_response("계정을 만들 수 없습니다.", details=exc.errors)
     try:
