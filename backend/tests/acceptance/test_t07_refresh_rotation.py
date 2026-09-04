@@ -9,13 +9,15 @@ from __future__ import annotations
 import pytest
 
 from concurrent.futures import ThreadPoolExecutor
+from datetime import timedelta
 from threading import Barrier
 
 from app import create_app
 from app.auth.cookies import ACCESS_COOKIE, CSRF_COOKIE, REFRESH_COOKIE, REFRESH_PATH
 from app.extensions import db
 from app.models import RefreshSession
-from app.services.sessions import ROTATED
+from app.security.tokens import idle_ttl, read_access_token
+from app.services.sessions import ROTATED, _aware, utc_now
 from test_t07_signup_login import EMAIL, PASSWORD, login, signup
 
 KEY = "synthetic-test-signing-key-not-a-real-secret-long-enough-for-hs256"
@@ -81,6 +83,95 @@ def test_c111_absolute_expiry_survives_rotation(client, monkeypatch):
     assert refresh(client).status_code == 200
     rows = db.session.scalars(db.select(RefreshSession).order_by(RefreshSession.issued_at)).all()
     assert rows[1].expires_at == first
+
+
+def age_out(session, *, idle=False, absolute=False):
+    """Move a session past one of its two limits, without waiting for it.
+
+    Aged by rewriting the row rather than by lowering the TTL: setting
+    IDLE_TTL_SECONDS to one second would prove the setting is read, and what
+    C111 is about is that the limit is enforced in all three places that decide
+    whether a session is still a session -- the guard, the pre-check, and
+    rotation itself.
+    """
+    now = utc_now()
+    if idle:
+        session.last_used_at = now - idle_ttl() - timedelta(seconds=1)
+    if absolute:
+        session.expires_at = now - timedelta(seconds=1)
+        session.last_used_at = now
+    db.session.commit()
+
+
+def test_c111_idle_expiry(client, monkeypatch):
+    """T07-C111: unused for the idle window, the session is gone.
+
+    The half of C111 the absolute test does not reach. A session can sit well
+    inside its fourteen days and still be nobody's, and the idle limit is what
+    says so.
+    """
+    monkeypatch.setenv("JWT_SECRET", KEY)
+    logged_in(client)
+    headers = csrf_headers(client)
+    assert client.get("/api/auth/me").status_code == 200
+
+    age_out(db.session.scalar(db.select(RefreshSession)), idle=True)
+
+    # The access token is untouched -- minted by us, still inside its ten
+    # minutes -- and it gets nothing, because the guard reads the row rather
+    # than trusting the signature. That is the whole cost of the hybrid design.
+    read_access_token(client.get_cookie(ACCESS_COOKIE).value)
+    assert client.get("/api/auth/me").status_code == 401
+
+    # And refresh cannot revive it. If it could, the idle limit would apply
+    # only to browsers that had already stopped asking.
+    idled = refresh(client, headers=headers)
+    assert idled.status_code == 401
+
+    # The refusal is the one an unknown token gets, to the byte. Telling them
+    # apart would say which half of a stolen pair is still worth something.
+    client.set_cookie(REFRESH_COOKIE, "not-a-token-at-all", path=REFRESH_PATH)
+    unknown = refresh(client, headers=headers)
+    assert (unknown.status_code, unknown.get_json()) == (idled.status_code, idled.get_json())
+
+
+def test_rotation_restarts_the_idle_clock(client, monkeypatch):
+    """Idle runs from `last_used_at`, and only rotation writes it.
+
+    An authenticated request costs one indexed read and no write, so the idle
+    clock advances in ten-minute steps rather than continuously -- ample for a
+    two-day limit, and the reason a session in daily use never idles out.
+    """
+    monkeypatch.setenv("JWT_SECRET", KEY)
+    logged_in(client)
+    session = db.session.scalar(db.select(RefreshSession))
+    # Close to the limit, but not past it.
+    session.last_used_at = utc_now() - idle_ttl() + timedelta(minutes=5)
+    db.session.commit()
+
+    assert refresh(client).status_code == 200
+    successor = db.session.scalars(
+        db.select(RefreshSession).order_by(RefreshSession.issued_at)
+    ).all()[1]
+    assert _aware(successor.last_used_at) > utc_now() - timedelta(minutes=1)
+    assert client.get("/api/auth/me").status_code == 200
+
+
+def test_the_absolute_limit_refuses_a_session_used_a_moment_ago(client, monkeypatch):
+    """Fourteen days is fourteen days, however busy the session has been.
+
+    The companion to the test above: rotation restarting the idle clock must
+    not restart this one, and the check that proves it has to be a session
+    whose idle clock is as fresh as it gets.
+    """
+    monkeypatch.setenv("JWT_SECRET", KEY)
+    logged_in(client)
+    headers = csrf_headers(client)
+
+    age_out(db.session.scalar(db.select(RefreshSession)), absolute=True)
+
+    assert client.get("/api/auth/me").status_code == 401
+    assert refresh(client, headers=headers).status_code == 401
 
 
 def test_the_spent_token_no_longer_works(client, monkeypatch):

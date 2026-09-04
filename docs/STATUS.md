@@ -2,6 +2,41 @@
 
 Updated: 2026-09-04 KST
 
+## 2026-09-04 Step 16 — idle and absolute expiry, now tested
+
+- The logic was already in `app/services/sessions.py` and had been since step 4;
+  what was missing was the acceptance test the matrix promises. Three added to
+  `test_t07_refresh_rotation.py`:
+  - `test_c111_idle_expiry` — a session past the idle window is refused by the
+    guard even though its access token is still signed and still in date, cannot
+    be revived by refresh, and its 401 is byte-identical to the one an unknown
+    token gets.
+  - `test_rotation_restarts_the_idle_clock` — `last_used_at` is written only by
+    rotation, so a session in daily use never idles out.
+  - `test_the_absolute_limit_refuses_a_session_used_a_moment_ago` — the
+    companion to `test_c111_absolute_expiry_survives_rotation`, which showed the
+    limit is not extended but never showed it actually bites.
+- Time is made by moving the row into the past rather than by lowering
+  `IDLE_TTL_SECONDS`. A one-second TTL proves the setting is read; C111 asks
+  whether the limit is enforced in all three places that decide whether a
+  session is still a session — the guard, the pre-check, and rotation.
+- Only `test_c111_idle_expiry` carries the `test_c` prefix. The other two are
+  not named in the matrix, and the guard reserves that prefix.
+- Fixed criteria with a passing automated test: 34/47.
+
+Commands run:
+
+- `backend/.venv/Scripts/python.exe -m pytest backend/tests` — **263 passed, 3
+  skipped**.
+
+Remaining: steps 17, 18, 20, 21, and the two human blockers unchanged (T06
+submission, then the deploy that starts the five-day clock).
+
+Handoff target: step 17 — the password-change endpoint. The service layer and
+`test_c114_password_change_revokes_all_sessions` already exist and pass; what is
+missing is the route, its re-authentication, and the lock ordering that keeps it
+from deadlocking with rotation.
+
 ## 2026-09-04 Step 15 — database-backed login throttle
 
 - `app/services/throttle.py` implements design section 6 against the existing
