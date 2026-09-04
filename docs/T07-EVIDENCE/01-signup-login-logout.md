@@ -1,7 +1,7 @@
 # 가입 · 로그인 · 로그아웃
 
 - 기준: T07-C94 · C95 · C96 · C98 · C99
-- 수집: 2026-09-04 10:34:05 +0900 · `backend/scripts/collect_auth_evidence.py` 실행 결과
+- 수집: 2026-09-04 10:40:09 +0900 · `backend/scripts/collect_auth_evidence.py` 실행 결과
 - 성공 3건 · 거절 3건
 
 계정을 만들고, 그 계정으로 들어가고, 나온다. 그리고 같은 주소로 두 번 가입되지 않는 것과, 로그인이 실패하는 두 경우가 **같은 문장·같은 상태**로 답하는 것.
@@ -27,9 +27,9 @@ Set-Cookie: (없음)
 
 {
   "user": {
-    "createdAt": "2026-09-04T01:34:05.062506",
+    "createdAt": "2026-09-04T01:40:08.925363",
     "email": "evidence-a@example.invalid",
-    "id": "54e2f324-dd81-4608-9462-9d613fe1c089"
+    "id": "a82c15dc-0f48-49dd-853b-dfe9569d9852"
   }
 }
 ```
@@ -78,9 +78,9 @@ Set-Cookie: __Host-pds_access=[redacted], __Secure-pds_refresh=[redacted], __Hos
 
 {
   "user": {
-    "createdAt": "2026-09-04T01:34:05.062506",
+    "createdAt": "2026-09-04T01:40:08.925363",
     "email": "evidence-a@example.invalid",
-    "id": "54e2f324-dd81-4608-9462-9d613fe1c089"
+    "id": "a82c15dc-0f48-49dd-853b-dfe9569d9852"
   }
 }
 ```

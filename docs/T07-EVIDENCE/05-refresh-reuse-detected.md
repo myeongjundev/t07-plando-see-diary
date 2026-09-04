@@ -1,7 +1,7 @@
 # Refresh 재사용 탐지
 
 - 기준: 설명서 ⑤ · 설계 4절
-- 수집: 2026-09-04 10:34:06 +0900 · `backend/scripts/collect_auth_evidence.py` 실행 결과
+- 수집: 2026-09-04 10:40:10 +0900 · `backend/scripts/collect_auth_evidence.py` 실행 결과
 - 성공 2건 · 거절 2건
 
 한 번 쓴 Refresh가 다시 오면 그 값은 그 사이에 **복제됐다는 뜻**이다. 누가 진짜인지 알 수 없으므로 그 로그인에서 뻗어 나온 계열을 통째로 끊는다.
@@ -41,9 +41,9 @@ Set-Cookie: (없음)
 
 {
   "user": {
-    "createdAt": "2026-09-04T01:34:06.137054",
+    "createdAt": "2026-09-04T01:40:09.951632",
     "email": "evidence-a@example.invalid",
-    "id": "bde50b90-a93d-4809-b715-512dd9f14675"
+    "id": "fed16ade-e4c9-4616-9ecf-fb586e1b7d72"
   }
 }
 ```

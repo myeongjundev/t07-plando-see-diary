@@ -1,7 +1,7 @@
 # Refresh 회전
 
 - 기준: T07-C111
-- 수집: 2026-09-04 10:34:05 +0900 · `backend/scripts/collect_auth_evidence.py` 실행 결과
+- 수집: 2026-09-04 10:40:09 +0900 · `backend/scripts/collect_auth_evidence.py` 실행 결과
 - 성공 2건 · 거절 1건
 
 A를 써서 B를 받고, 그 뒤 A는 죽는다. 한 번 쓴 값이 계속 통하면 훔친 값도 계속 통한다.
@@ -41,9 +41,9 @@ Set-Cookie: (없음)
 
 {
   "user": {
-    "createdAt": "2026-09-04T01:34:05.892630",
+    "createdAt": "2026-09-04T01:40:09.696589",
     "email": "evidence-a@example.invalid",
-    "id": "bf75b791-8836-4076-a22a-d494524bcf47"
+    "id": "ffe549ab-1ab0-46a0-ac48-2686e8d8a78a"
   }
 }
 ```
@@ -73,7 +73,7 @@ Set-Cookie: __Host-pds_access=[redacted], __Secure-pds_refresh=[redacted], __Hos
 
 | # | 계열 | 상태 |
 | ---: | --- | --- |
-| 1 | 91c44a9a… | rotated |
-| 2 | 91c44a9a… | reuse |
+| 1 | f04bb24e… | rotated |
+| 2 | f04bb24e… | reuse |
 
 회전은 로그인 하나를 이어 가는 것이라 **계열이 같다.** 절대 만료도 물려받는다 — 회전이 늘릴 수 있는 한도는 절대 한도가 아니다 (C111).

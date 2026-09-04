@@ -1,7 +1,7 @@
 # 남의 자료가 안 열리는 것
 
 - 기준: T07-C116 ~ C126
-- 수집: 2026-09-04 10:34:07 +0900 · `backend/scripts/collect_auth_evidence.py` 실행 결과
+- 수집: 2026-09-04 10:40:11 +0900 · `backend/scripts/collect_auth_evidence.py` 실행 결과
 - 성공 3건 · 거절 7건
 
 계정 두 개에 각각 자료를 넣고, **양방향으로** 읽기·수정·삭제를 시도한다. 주소·헤더·본문에 남의 ID를 적어 보낸 것과, 로그인하지 않은 요청도 함께.
@@ -12,7 +12,7 @@
 ### 1. A가 자기 계획을 읽는다 (C116)
 
 ```http
-GET /api/plans/03a18dcc-2c63-4e55-b5ce-ea410ef2591b
+GET /api/plans/a30cf588-4609-40a3-91da-6549563ced58
 Cookie: access=[redacted], refresh=[redacted], csrf=[redacted]
 ```
 
@@ -23,16 +23,16 @@ Set-Cookie: (없음)
 {
   "plan": {
     "carriedImprovement": null,
-    "createdAt": "2026-09-04T01:34:07.406782+00:00",
+    "createdAt": "2026-09-04T01:40:11.212045+00:00",
     "durationUnit": "minutes",
     "endDate": "2026-09-07",
     "estimatedMinutes": 600,
-    "id": "03a18dcc-2c63-4e55-b5ce-ea410ef2591b",
+    "id": "a30cf588-4609-40a3-91da-6549563ced58",
     "priority": "high",
     "startDate": "2026-09-01",
     "successCriterion": "합성 성공 기준",
     "title": "앨리스의 합성 계획",
-    "updatedAt": "2026-09-04T01:34:07.406784+00:00"
+    "updatedAt": "2026-09-04T01:40:11.212046+00:00"
   }
 }
 ```
@@ -40,7 +40,7 @@ Set-Cookie: (없음)
 ### 2. A → B 읽기 (C117)
 
 ```http
-GET /api/plans/ff4f9e22-46d4-4114-8dd2-2137908cf7cc
+GET /api/plans/1844ef37-4ebf-435c-95cd-f722bf811345
 Cookie: access=[redacted], refresh=[redacted], csrf=[redacted]
 ```
 
@@ -59,7 +59,7 @@ Set-Cookie: (없음)
 ### 3. A → B 수정 (C118)
 
 ```http
-PATCH /api/plans/ff4f9e22-46d4-4114-8dd2-2137908cf7cc
+PATCH /api/plans/1844ef37-4ebf-435c-95cd-f722bf811345
 Cookie: access=[redacted], refresh=[redacted], csrf=[redacted]
 X-CSRF-Token: [redacted]
 
@@ -83,7 +83,7 @@ Set-Cookie: (없음)
 ### 4. A → B 삭제 (C119)
 
 ```http
-DELETE /api/tasks/930890cf-4bd0-402f-8643-84fcdbc5385a
+DELETE /api/tasks/2c8973f2-ddeb-4a51-a54d-896061613ba1
 Cookie: access=[redacted], refresh=[redacted], csrf=[redacted]
 X-CSRF-Token: [redacted]
 ```
@@ -103,7 +103,7 @@ Set-Cookie: (없음)
 ### 5. B → A 읽기 (C120)
 
 ```http
-GET /api/plans/03a18dcc-2c63-4e55-b5ce-ea410ef2591b
+GET /api/plans/a30cf588-4609-40a3-91da-6549563ced58
 Cookie: access=[redacted], refresh=[redacted], csrf=[redacted]
 ```
 
@@ -122,7 +122,7 @@ Set-Cookie: (없음)
 ### 6. B → A 수정 (C120)
 
 ```http
-PATCH /api/plans/03a18dcc-2c63-4e55-b5ce-ea410ef2591b
+PATCH /api/plans/a30cf588-4609-40a3-91da-6549563ced58
 Cookie: access=[redacted], refresh=[redacted], csrf=[redacted]
 X-CSRF-Token: [redacted]
 
@@ -146,7 +146,7 @@ Set-Cookie: (없음)
 ### 7. B → A 삭제 (C120)
 
 ```http
-DELETE /api/tasks/e8057bfe-43b2-4585-9e09-59a142d0ad39
+DELETE /api/tasks/99d0f42a-912d-45f8-9231-728ace916e61
 Cookie: access=[redacted], refresh=[redacted], csrf=[redacted]
 X-CSRF-Token: [redacted]
 ```
@@ -166,7 +166,7 @@ Set-Cookie: (없음)
 ### 8. 주소·헤더에 남을 적어 보냄 — 그래도 내 것만 (C123)
 
 ```http
-GET /api/plans?userId=ff4f9e22-46d4-4114-8dd2-2137908cf7cc
+GET /api/plans?userId=1844ef37-4ebf-435c-95cd-f722bf811345
 Cookie: access=[redacted], refresh=[redacted], csrf=[redacted]
 X-User-Id: B
 ```
@@ -179,16 +179,16 @@ Set-Cookie: (없음)
   "plans": [
     {
       "carriedImprovement": null,
-      "createdAt": "2026-09-04T01:34:07.406782+00:00",
+      "createdAt": "2026-09-04T01:40:11.212045+00:00",
       "durationUnit": "minutes",
       "endDate": "2026-09-07",
       "estimatedMinutes": 600,
-      "id": "03a18dcc-2c63-4e55-b5ce-ea410ef2591b",
+      "id": "a30cf588-4609-40a3-91da-6549563ced58",
       "priority": "high",
       "startDate": "2026-09-01",
       "successCriterion": "합성 성공 기준",
       "title": "앨리스의 합성 계획",
-      "updatedAt": "2026-09-04T01:34:07.406784+00:00"
+      "updatedAt": "2026-09-04T01:40:11.212046+00:00"
     }
   ]
 }
@@ -228,16 +228,16 @@ Set-Cookie: (없음)
   "plans": [
     {
       "carriedImprovement": null,
-      "createdAt": "2026-09-04T01:34:07.406782+00:00",
+      "createdAt": "2026-09-04T01:40:11.212045+00:00",
       "durationUnit": "minutes",
       "endDate": "2026-09-07",
       "estimatedMinutes": 600,
-      "id": "03a18dcc-2c63-4e55-b5ce-ea410ef2591b",
+      "id": "a30cf588-4609-40a3-91da-6549563ced58",
       "priority": "high",
       "startDate": "2026-09-01",
       "successCriterion": "합성 성공 기준",
       "title": "앨리스의 합성 계획",
-      "updatedAt": "2026-09-04T01:34:07.406784+00:00"
+      "updatedAt": "2026-09-04T01:40:11.212046+00:00"
     }
   ]
 }

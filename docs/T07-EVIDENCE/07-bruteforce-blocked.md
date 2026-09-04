@@ -1,7 +1,7 @@
 # 무차별 대입 잠금
 
 - 기준: 설명서 ⑤ · 설계 6절
-- 수집: 2026-09-04 10:34:07 +0900 · `backend/scripts/collect_auth_evidence.py` 실행 결과
+- 수집: 2026-09-04 10:40:10 +0900 · `backend/scripts/collect_auth_evidence.py` 실행 결과
 - 성공 2건 · 거절 8건
 
 같은 (계정, 주소)로 다섯 번 틀리면 잠긴다. **없는 계정도 똑같이 잠긴다** — 안 그러면 「잠기지 않는다」가 곧 「그런 계정 없다」가 된다.
@@ -27,9 +27,9 @@ Set-Cookie: __Host-pds_access=[redacted], __Secure-pds_refresh=[redacted], __Hos
 
 {
   "user": {
-    "createdAt": "2026-09-04T01:34:06.604317",
+    "createdAt": "2026-09-04T01:40:10.422577",
     "email": "evidence-a@example.invalid",
-    "id": "845e2206-d854-44bb-b1cc-9ac5836487b6"
+    "id": "b3b586f1-6be9-4c88-bb58-540f182ff00a"
   }
 }
 ```
@@ -247,9 +247,9 @@ Set-Cookie: __Host-pds_access=[redacted], __Secure-pds_refresh=[redacted], __Hos
 
 {
   "user": {
-    "createdAt": "2026-09-04T01:34:06.604317",
+    "createdAt": "2026-09-04T01:40:10.422577",
     "email": "evidence-a@example.invalid",
-    "id": "845e2206-d854-44bb-b1cc-9ac5836487b6"
+    "id": "b3b586f1-6be9-4c88-bb58-540f182ff00a"
   }
 }
 ```
@@ -258,6 +258,7 @@ Set-Cookie: __Host-pds_access=[redacted], __Secure-pds_refresh=[redacted], __Hos
 - 첫 잠금 60초, 이후 실패마다 배증, 최대 15분
 - 있는 계정과 없는 계정의 응답이 같은가: **같다** (429 / 429)
 - 맞는 비밀번호로도 잠금을 넘지 못한다: 429
+- 잠금이 지난 뒤에는 다시 들어온다: 200 — 60초를 기다리는 대신 `login_attempts.attempted_at`을 과거로 옮겼다. **옮긴 것은 시계뿐이고 판단하는 코드는 그대로다.** 잠금은 영구가 아니다
 
 **잠금 중 요청은 실패 횟수에 넣지 않는다.** 넣으면 공격자가 요청만 계속 보내 피해자를 창 내내 붙들 수 있다. IP는 원문을 저장하지 않고 `HMAC-SHA-256(IP_HASH_SECRET, 주소)`로만 남는다.
 

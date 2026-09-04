@@ -1,7 +1,7 @@
 # 로그아웃 전후, 같은 요청
 
 - 기준: T07-C108 · C109 · C110 · C114
-- 수집: 2026-09-04 10:34:05 +0900 · `backend/scripts/collect_auth_evidence.py` 실행 결과
+- 수집: 2026-09-04 10:40:09 +0900 · `backend/scripts/collect_auth_evidence.py` 실행 결과
 - 성공 2건 · 거절 1건
 
 **같은 주소·같은 방식**의 요청을 로그아웃 앞뒤로 한 번씩. 달라진 것은 로그아웃 여부뿐이다.
@@ -22,9 +22,9 @@ Set-Cookie: (없음)
 
 {
   "user": {
-    "createdAt": "2026-09-04T01:34:05.664921",
+    "createdAt": "2026-09-04T01:40:09.473357",
     "email": "evidence-a@example.invalid",
-    "id": "97d681d1-11bc-4365-9ea8-c578eb770ad0"
+    "id": "1e4cfd7f-9464-4b2d-af5f-657f8ba12b76"
   }
 }
 ```

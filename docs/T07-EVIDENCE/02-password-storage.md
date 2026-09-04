@@ -1,7 +1,7 @@
 # 비밀번호를 어떻게 맡아 두는가
 
 - 기준: T07-C101 ~ C107
-- 수집: 2026-09-04 10:34:05 +0900 · `backend/scripts/collect_auth_evidence.py` 실행 결과
+- 수집: 2026-09-04 10:40:09 +0900 · `backend/scripts/collect_auth_evidence.py` 실행 결과
 - 성공 2건 · 거절 1건
 
 저장된 값의 모양과, **같은 비밀번호로 만든 두 계정의 저장 값이 서로 다른 것**. 뒤쪽은 인증 서비스를 골랐다면 만들 수 없는 장면이다.
@@ -27,9 +27,9 @@ Set-Cookie: (없음)
 
 {
   "user": {
-    "createdAt": "2026-09-04T01:34:05.402408",
+    "createdAt": "2026-09-04T01:40:09.247508",
     "email": "same-1@example.invalid",
-    "id": "2047e030-f0d3-4df2-95f4-7b2d0ce4c222"
+    "id": "450894d3-31d8-4a4d-9694-0320f5d49c34"
   }
 }
 ```
@@ -52,9 +52,9 @@ Set-Cookie: (없음)
 
 {
   "user": {
-    "createdAt": "2026-09-04T01:34:05.438733",
+    "createdAt": "2026-09-04T01:40:09.283424",
     "email": "same-2@example.invalid",
-    "id": "e95a236a-f802-4951-87a1-ebf55acfaff1"
+    "id": "501e4524-48fc-4d09-9d00-b929ccc224f2"
   }
 }
 ```

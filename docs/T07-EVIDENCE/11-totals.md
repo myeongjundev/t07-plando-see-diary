@@ -1,7 +1,7 @@
 # 화면 합계와 손으로 더한 값
 
 - 기준: T07-C132
-- 수집: 2026-09-04 10:34:08 +0900 · `backend/scripts/collect_auth_evidence.py` 실행 결과
+- 수집: 2026-09-04 10:40:12 +0900 · `backend/scripts/collect_auth_evidence.py` 실행 결과
 - 성공 1건 · 거절 1건
 
 집계가 돌려준 숫자와, 같은 기록을 손으로 더한 값이 같은가.
@@ -12,7 +12,7 @@
 ### 1. 집계 (성공)
 
 ```http
-GET /api/plans/c3e34f41-7c86-4930-9431-e4cdecab679a/study
+GET /api/plans/f8716d27-f00c-4fda-8709-f20fd7e1f05f/study
 Cookie: access=[redacted], refresh=[redacted], csrf=[redacted]
 ```
 
@@ -84,20 +84,20 @@ Set-Cookie: (없음)
     {
       "actualMinutes": 90,
       "blockerReason": "합성 사유",
-      "createdAt": "2026-09-04T01:34:08.245509+00:00",
+      "createdAt": "2026-09-04T01:40:12.041918+00:00",
       "dayNumber": 1,
       "durationUnit": "minutes",
       "endedAt": "2026-09-01T05:30:00+00:00",
-      "id": "dbf4e529-d2a2-49c8-963d-0ea1383c98e6",
+      "id": "a1db2f55-4d7e-4a89-a8c2-afee3c44c22a",
       "startedAt": "2026-09-01T04:00:00+00:00",
       "taskContent": "합성 할 일",
-      "taskId": "30f2959f-
+      "taskId": "973c82a8-
 ```
 
 ### 2. 로그인 없이 같은 집계 — 거절
 
 ```http
-GET /api/plans/c3e34f41-7c86-4930-9431-e4cdecab679a/study
+GET /api/plans/f8716d27-f00c-4fda-8709-f20fd7e1f05f/study
 Cookie: (없음)
 ```
 
