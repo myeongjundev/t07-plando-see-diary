@@ -2,6 +2,54 @@
 
 Updated: 2026-09-04 KST
 
+## 2026-09-04 Step 15 — database-backed login throttle
+
+- `app/services/throttle.py` implements design section 6 against the existing
+  `login_attempts` table: a 15-minute window, a lock at 5 failures for one
+  (email, ip_hash) pair or 20 for the address alone, 60 seconds doubling to a
+  15-minute ceiling, and release of that pair's failures on a successful login.
+- Wired into `app/api/auth.py::login` **before** the account lookup and Argon2
+  verification, so an address that exists and one that does not reach the same
+  429 by the same route. The refusal carries `Retry-After` and a message that
+  does not say an account exists; that unfriendliness is deliberate and belongs
+  in the guide's section ⑥.
+- Requests refused while locked are written as `blocked` and never counted, so
+  an attacker cannot hold a victim at the ceiling by continuing to knock.
+  Failures against unregistered addresses and unparseable bodies are counted,
+  so "this address never locks" is not an enumeration oracle.
+- A successful login clears only that (email, ip_hash) pair. The address-wide
+  count survives on purpose: otherwise one account of the attacker's own resets
+  the global limit at will.
+- Rows past 24 hours are deleted from the login path with 1/100 probability.
+  Render Free has no cron.
+- Noted while testing: `MAX_LOCK` equals `WINDOW`, so serving out the 60 → 120
+  → 240 → 480 second ladder ages the earliest failures out of the window and
+  the ceiling is reached by arithmetic rather than by a real request sequence.
+  The ladder is therefore tested on `_lock_for` directly; everything else is
+  tested through the endpoint.
+- New: `backend/tests/acceptance/test_t07_login_throttle.py`, 14 tests. None use
+  the `test_c` prefix — no fixed criterion names throttling, and the matrix
+  guard reserves that prefix.
+- No schema change, no migration, no new table in the export contract. The
+  frontend needed no change: `CredentialsPage` already renders the server's
+  message, so the 429 text appears as written.
+
+Commands run:
+
+- `backend/.venv/Scripts/python.exe -m pytest backend/tests` — **260 passed, 3
+  skipped** (was 246 passed, 3 skipped).
+- `npm --prefix frontend test` — 19 passed.
+- `npm --prefix frontend run build` — built.
+- `backend/.venv/Scripts/python.exe backend/scripts/audit_secrets.py` — 0
+  findings over the worktree, frontend build, and 1091 Git objects.
+
+Remaining: steps 16 (idle/absolute expiry — the logic is already in
+`sessions.py`; what is missing is `test_c111_idle_expiry`), 17, 18, 20, 21, and
+the two human blockers unchanged from the 2026-09-04 handoff (T06 submission,
+then the deploy that starts the five-day clock).
+
+Handoff target: step 16, then 17.
+
 ## 2026-09-04 T06 production ID inventory fixed for claim
 
 - Read the still-public T06 `/api/export` in memory and retained IDs only; no

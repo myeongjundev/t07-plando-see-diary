@@ -16,7 +16,9 @@ from app.extensions import db
 from app.models import User
 from app.services.ownership import current_session_id, current_user_id
 from app.security.http import check_unauthenticated_request, origin_is_allowed, wants_json
+from app.security.redact import hash_ip
 from app.services import security_events as events
+from app.services import throttle
 from app.services.sessions import (
     LOGOUT,
     REUSE,
@@ -41,6 +43,12 @@ from app.services.accounts import (
 # and a password that is wrong are the same event as far as the caller is
 # concerned, and telling them apart is how an address list gets built.
 INVALID_CREDENTIALS = "이메일 또는 비밀번호가 올바르지 않습니다."
+
+# Deliberately unhelpful. Saying "this account is locked" would confirm that
+# the account exists, which is the one thing C99 asks the login path not to
+# say -- so a locked-out legitimate user is told less than would be kind.
+# That trade is written down in the guide's section ⑥ rather than hidden.
+TOO_MANY_ATTEMPTS = "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요."
 
 
 def revoke_reused_family(family_id: str, user_id: str | None) -> None:
@@ -113,11 +121,31 @@ def login():
     except AccountValidationError:
         # Not reported field by field. A malformed address and an unregistered
         # one would otherwise be distinguishable, which is the same leak C99
-        # closes on the other side.
-        return error_response(INVALID_CREDENTIALS, status=401)
+        # closes on the other side. It still goes through the throttle below,
+        # for the same reason -- but with no address to count against.
+        credentials = None
 
-    user = authenticate(credentials)
+    email = credentials.email if credentials else None
+    ip_hash = hash_ip(events.client_ip())
+
+    # Before the account lookup and before Argon2, so that an address that
+    # exists and one that does not reach the same 429 by the same route and in
+    # the same time. Checked after parsing only because parsing touches neither
+    # the database nor the hasher (design section 6).
+    lock = throttle.current_lock(email, ip_hash)
+    if lock is not None:
+        # Written as `blocked`, which the counter ignores. Counting it would let
+        # anyone keep a victim locked for the full fifteen minutes just by
+        # continuing to send requests they know will be refused.
+        throttle.record_blocked(email, ip_hash)
+        events.record(events.LOGIN_BLOCKED, events.FAILURE)
+        response, status = error_response(TOO_MANY_ATTEMPTS, status=429)
+        response.headers["Retry-After"] = str(lock.retry_after)
+        return response, status
+
+    user = authenticate(credentials) if credentials else None
     if user is None:
+        throttle.record_failure(email, ip_hash)
         # No user_id, because there may be no user -- and no address, for the
         # same reason the duplicate above does not carry one. What the row is
         # for is the shape of the traffic: how many failures, from which hashed
@@ -125,6 +153,9 @@ def login():
         events.record(events.LOGIN_FAILURE, events.FAILURE)
         return error_response(INVALID_CREDENTIALS, status=401)
 
+    # Releases this pair, and only this pair. The address-wide count survives,
+    # or an attacker with one account of their own could clear it at will.
+    throttle.record_success(email, ip_hash)
     issued = open_session(user)
     events.record(
         events.LOGIN_SUCCESS, events.SUCCESS,
