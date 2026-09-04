@@ -9,3 +9,4 @@ from app.api import executions  # noqa: E402, F401
 from app.api import reflections  # noqa: E402, F401
 from app.api import rule_changes  # noqa: E402, F401
 from app.api import export  # noqa: E402, F401
+from app.api import account  # noqa: E402, F401

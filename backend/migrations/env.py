@@ -98,6 +98,23 @@ def run_migrations_online():
     connectable = get_engine()
 
     with connectable.connect() as connection:
+        # SQLite has no ALTER for most changes, so batch mode recreates the
+        # table: rename, create the new shape, copy, drop. With
+        # `PRAGMA foreign_keys` on -- which `app/extensions.py` sets, so that
+        # cascades behave the way the deployed PostgreSQL will -- dropping the
+        # old table takes its children with it, and a migration that only meant
+        # to widen a column silently empties the tables below it.
+        #
+        # Off for the duration of the migration, which is Alembic's own
+        # recommendation for SQLite, and restored after. Never reached in
+        # production: that is PostgreSQL, where the pragma does not exist.
+        # Toggled on the DBAPI connection, not through exec_driver_sql: SQLite
+        # refuses to change this pragma inside a transaction, and the engine
+        # has usually begun one by the time a migration runs.
+        sqlite = connection.dialect.name == "sqlite"
+        if sqlite:
+            connection.connection.dbapi_connection.execute("PRAGMA foreign_keys=OFF")
+
         context.configure(
             connection=connection,
             target_metadata=get_metadata(),
@@ -106,6 +123,9 @@ def run_migrations_online():
 
         with context.begin_transaction():
             context.run_migrations()
+
+        if sqlite:
+            connection.connection.dbapi_connection.execute("PRAGMA foreign_keys=ON")
 
 
 if context.is_offline_mode():

@@ -46,3 +46,23 @@ export async function currentAccount(): Promise<Account | null> {
   if (!response.ok) throw new Error("로그인 상태를 확인하지 못했습니다.");
   return ((await response.json()) as { user: Account }).user;
 }
+
+/** Change the password. Every other session dies; this one is replaced.
+ *
+ * The response carries a fresh set of cookies, so nothing here has to sign the
+ * user back in -- and nothing here ever sees a token to begin with.
+ */
+export function changePassword(currentPassword: string, newPassword: string) {
+  return request<{ ok: true }>("/api/auth/password", {
+    method: "POST",
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+}
+
+/** Delete the account and everything under it. Not undoable. */
+export function deleteAccount(password: string) {
+  return request<{ ok: true }>("/api/account", {
+    method: "DELETE",
+    body: JSON.stringify({ password }),
+  });
+}

@@ -1760,3 +1760,31 @@ summary:hover { color: var(--accent); }
   font-size: var(--t-h3);
   font-variant-numeric: tabular-nums;
 }
+
+/* ── 계정 구획 ───────────────────────────────────────────────────────── */
+
+.account-panel form { display: grid; gap: var(--s4); }
+.account-panel h3 { margin: 0; font-size: var(--t-body); }
+
+/* 되돌릴 수 없는 것은 나머지와 같은 흐름 안에 두지 않는다. 선 하나와 여백이
+   「여기서부터는 다르다」를 말한다 — 색만으로는 말하지 않는다. */
+.danger-zone {
+  margin-top: var(--s5, 24px);
+  padding-top: var(--s4);
+  border-top: 1px solid var(--line);
+}
+
+.danger {
+  justify-self: start;
+  border: 1px solid var(--crit);
+  border-radius: var(--r-ctl);
+  background: none;
+  color: var(--crit);
+  padding: 12px 22px;
+  font-weight: 800;
+  font-size: var(--t-body);
+  transition: background var(--ease), color var(--ease);
+}
+
+.danger:hover:not(:disabled) { background: var(--crit); color: var(--surface); }
+.danger:disabled { opacity: .5; cursor: not-allowed; }

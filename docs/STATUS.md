@@ -2,6 +2,79 @@
 
 Updated: 2026-09-04 KST
 
+## 2026-09-04 Step 18 — account deletion, the account screen, and a database that enforces its keys
+
+### The finding worth reading first
+
+**SQLite was not enforcing foreign keys, so the entire suite had been running
+against a database where no cascade fired.** The delete tests written for this
+step failed on their first run: the user row went, every plan stayed, and
+`security_events.user_id` was never nulled. `app/extensions.py` now sets
+`PRAGMA foreign_keys=ON` on every SQLite connection, which is what makes the
+tests mean what they say. A wrong or missing `ondelete` would previously have
+been invisible until production.
+
+That has one cost, and it bit immediately: SQLite has no `ALTER` for most
+changes, so Alembic's batch mode recreates a table — rename, create, copy,
+drop — and with foreign keys on, **the drop takes the child rows with it.** Two
+card 3/4 migration tests went red. `migrations/env.py` now turns the pragma off
+for the duration of a migration and back on after, which is Alembic's own
+recommendation. Note that the pragma cannot be changed inside a transaction:
+`exec_driver_sql` is silently ignored, so it is issued on the DBAPI connection.
+Production is PostgreSQL and reaches none of this.
+
+### API — `DELETE /api/account` (C134)
+
+- Password required again. This is the one action in the application that
+  cannot be undone, and a session found unattended must not be enough.
+- `ACCOUNT_DELETED` is written **before** the delete and in the same
+  transaction. `security_events.user_id` is SET NULL rather than CASCADE, so the
+  cascade empties that column as it passes: the event survives, the name does
+  not. An audit log that deletes itself with the account is no use after a
+  breach.
+- Cookies cleared last, after the rows are gone, so a lost response leaves a
+  browser holding three values that name nothing.
+
+### Screen — panel 05 inside `/app`
+
+`frontend/src/features/account/AccountPanel.tsx`, holding both step 17's change
+form and this step's delete form; export was already panel 04, which completes
+design section 8's account screen. `RevealButton` moved out of
+`CredentialsPage` so both screens share one.
+
+Deletion needs the password **and** the phrase 「계정 삭제」 typed by hand — an
+irreversible action must not be one click away — and the warning lists what
+goes (계획 · 할 일 · 실행 기록 · 회고 · 규칙 변경 기록) rather than saying "all
+data", which nobody can count.
+
+### Tests
+
+- `test_t07_account_delete.py`, 10 tests, including
+  `test_c134_account_delete_removes_own_data` and
+  `test_c133_export_is_one_file_and_only_mine` — two more of the matrix's named
+  tests now exist, so fixed criteria with an automated test go 34 → 36.
+- `AccountPanel.test.tsx`, 10 tests, mostly about the buttons staying disabled.
+
+Commands run:
+
+- `backend/.venv/Scripts/python.exe -m pytest backend/tests` — **290 passed, 4
+  skipped** (was 280 passed, 4 skipped).
+- `npm --prefix frontend test` — **71 passed** (was 61). Build clean.
+- `backend/.venv/Scripts/python.exe backend/scripts/audit_secrets.py` — 0 findings.
+- End to end against `local_server.py` with curl: signup 201 → login 200 →
+  password change 200 → `me` still 200 → delete 200 → login 401.
+
+**Still owed before this ships: the three PostgreSQL-gated tests.** Two cascade
+tests and step 17's race, all skipping without `TEST_DATABASE_URL`. SQLite now
+enforces the keys, which makes the local run far more meaningful, but the
+engine that is deployed has still not run them.
+
+Remaining: steps 20 (evidence script) and 21 (the six-section guide), plus the
+two human blockers (T06 submission, then the deploy that starts the five-day
+clock).
+
+Handoff target: step 20 — `collect_auth_evidence.py`.
+
 ## 2026-09-04 Step 17 — password change and total session revocation
 
 `POST /api/auth/password`, behind `@login_required` and CSRF. The order is the
