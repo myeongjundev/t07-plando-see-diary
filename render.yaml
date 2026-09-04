@@ -40,10 +40,16 @@ services:
       # and runs the named script in the background, bracketed in the log.
       # Flip it here, push, read the log, flip it back to none, push again.
       # Known names: none | bench_password_hashing | claim_t06_data
+      #
+      # Armed for the repoint deploy. `claim_t06_data` is the one task that
+      # changes data, so start.sh runs it synchronously and between two
+      # migrations: up to a1c7d9e40b52 (accounts exist, ownership not yet
+      # required), the claim, then the rest of the chain including the NOT NULL.
+      # Set this back to `none` and push once the log says NULL=0.
       - key: BOOT_TASK
-        value: "bench_password_hashing"
+        value: "claim_t06_data"
       - key: BOOT_TASK_ARGS
-        value: "--repeats 3"
+        value: "--apply"
       # For BOOT_TASK=claim_t06_data. The two id lists must between them name
       # every plan that still has no owner: one the script cannot place stops
       # the boot rather than guessing, and the excluded ones are deleted, so

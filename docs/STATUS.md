@@ -2,6 +2,55 @@
 
 Updated: 2026-09-04 KST
 
+## 2026-09-04 Deploy runbook was wrong; fixed before it ran
+
+The two-deploy sequence in the runbook could not have worked. `deploy/start.sh`
+began with `flask db upgrade` to head, and the NOT NULL migration
+(`c48b1f60a2d7`) sits **before** the head, not after it. So deploy A would have
+walked into `plans.user_id NOT NULL` with all seven T06 plans still ownerless,
+the migration would have refused — correctly, and with a good message — and the
+boot would have died *before reaching the claim it existed to run*. Deploy B
+would then have had nothing to build on.
+
+Found by reading the migration chain against the runbook while preparing the
+deploy, not by deploying.
+
+**`start.sh` now does the whole thing in one deploy.** The claim branch upgrades
+to `a1c7d9e40b52` (accounts exist, ownership not yet required), runs
+`claim_t06_data --apply`, then finishes the chain — so the NOT NULL applies to
+rows that now have an owner. `set -e` still means a failed claim stops the boot
+before the NOT NULL is reached.
+
+New: `backend/tests/acceptance/test_t07_deploy_sequence.py`, 5 tests, which
+rehearse that boot against a database at T06's revision holding an unowned plan:
+
+- the old behaviour (straight to head) fails, exits 1, and stops at
+  `a1c7d9e40b52` rather than half-applying;
+- the corrected order claims and then requires an owner, with the diary intact;
+- running the boot task twice changes nothing — one account, same revision — so
+  a redeploy with `BOOT_TASK` still set is safe;
+- `start.sh` is read from disk, so a change to it that this file does not know
+  about fails here rather than on the instance;
+- `render.yaml`'s two plan-id lists do not overlap and cover all seven, and the
+  four values that must never be committed are `sync: false`.
+
+SQLite, so this fixes the *ordering*, not the DDL. PostgreSQL still applies the
+NOT NULL itself, and the three PostgreSQL-gated tests remain unrun.
+
+`render.yaml` is now armed for the repoint: `BOOT_TASK=claim_t06_data`,
+`BOOT_TASK_ARGS=--apply` (was the hashing benchmark).
+
+Also written into the runbook: **take a Neon snapshot first.** The claim
+deletes four empty T06 demo plans, and that is not reversible by switching the
+repository connection back.
+
+Commands run:
+
+- `backend/.venv/Scripts/python.exe -m pytest backend/tests` — **304 passed, 4
+  skipped** (was 299 passed, 4 skipped).
+
+Handoff target: the deploy itself — handoff section 4, steps 0 through 7.
+
 ## 2026-09-04 T06 submitted — the deploy is unblocked
 
 Reported by the author: the T06 submission is in and its final result has been
