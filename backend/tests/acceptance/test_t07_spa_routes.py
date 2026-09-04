@@ -61,9 +61,34 @@ def test_an_unknown_path_is_still_a_404(served, path):
     assert SHELL not in response.text
 
 
-def test_login_and_signup_need_no_session(served):
-    """T07-C03: a reviewer with no account gets this far and no further."""
-    for path in ("/login", "/signup"):
-        assert served.get(path).status_code == 200
-    # And the data behind the shell is still refused.
+def test_c03_root_serves_login_without_auth(served):
+    """A reviewer with no account gets this far, and no further.
+
+    C01 and C03 look like they disagree — one wants the URL to open in a fresh
+    incognito window, the other wants the first screen to be a login screen —
+    and they do not: a login screen that opens without an account satisfies
+    both. So the root and the two credential routes must answer 200 to a caller
+    carrying nothing at all.
+    """
+    for path in ("/", "/login", "/signup"):
+        response = served.get(path)
+        assert response.status_code == 200, path
+        assert SHELL in response.text
+    # And what sits behind the shell is still refused, which is the "no further".
     assert served.get("/api/plans").status_code == 401
+
+
+def test_c97_app_route_redirects_when_anonymous(served):
+    """Opening `/app` with no session must end at the login screen.
+
+    The redirect itself is client-side and `frontend/src/auth/routes.test.tsx`
+    is what checks it. What the server has to hold up is the half that makes the
+    redirect possible and unavoidable: the shell is served — a 404 here would
+    mean a reviewer typing the address never reaches the gate at all — and every
+    request that screen would make to fill itself is refused, so there is
+    nothing it could render instead.
+    """
+    assert served.get("/app").status_code == 200
+
+    for path in ("/api/plans", "/api/export", "/api/auth/me"):
+        assert served.get(path).status_code == 401, path

@@ -34,12 +34,18 @@ def csrf_matches() -> bool:
     Compared with compare_digest. The values are not secret in the way a
     password is, but a length-revealing early exit is free to avoid and the
     habit is worth more than the microsecond.
+
+    Encoded to bytes first. `compare_digest` raises TypeError on a str holding
+    anything outside ASCII, and the header is caller-supplied: comparing the
+    strings turns "attacker sent 한글 in the CSRF header" into a 500 instead of
+    the 403 every other bad header gets. A refusal that crashes is a refusal
+    that can be told apart from the others.
     """
     sent = request.headers.get(CSRF_HEADER)
     stored = request.cookies.get(CSRF_COOKIE)
     if not sent or not stored:
         return False
-    return hmac.compare_digest(sent, stored)
+    return hmac.compare_digest(sent.encode("utf-8"), stored.encode("utf-8"))
 
 
 def check_state_changing_request() -> tuple[str, int] | None:

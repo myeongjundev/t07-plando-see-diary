@@ -127,3 +127,16 @@ def test_a_cross_site_form_post_cannot_reach_a_write(app, targets):
     )
     assert response.status_code == 415
     assert client.get(f"/api/tasks/{task_id}").get_json()["task"]["status"] == "active"
+
+
+def test_a_non_ascii_header_is_refused_rather_than_crashing(client):
+    """`compare_digest` raises TypeError on non-ASCII str.
+
+    The header is caller-supplied, so comparing the strings turns "somebody put
+    한글 in the CSRF header" into a 500 while every other bad header gets 403 --
+    and a refusal that crashes is a refusal that can be told apart from the
+    others. Found by the evidence script, which sent a Korean value as its
+    "mismatched header" case.
+    """
+    response = client.post("/api/plans", json=PLAN, headers={CSRF_HEADER: "틀린-값"}, csrf=False)
+    assert response.status_code == 403

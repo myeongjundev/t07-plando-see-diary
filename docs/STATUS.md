@@ -2,6 +2,86 @@
 
 Updated: 2026-09-04 KST
 
+## 2026-09-04 T06 submitted — the deploy is unblocked
+
+Reported by the author: the T06 submission is in and its final result has been
+confirmed. The rule that held the Render repository connection on T06 —
+"do not switch until T06 is in the submission form" — no longer applies, so the
+deploy sequence in the handoff's section 4 can run.
+
+That makes the five-day clock the only remaining schedule constraint, and it
+starts the day after the deploy. **The deploy now comes before step 21**: the
+guide can be written while the five days run; the five days cannot start without
+the deploy.
+
+One thing to settle before the guide states it (C77): which commit was actually
+submitted for T06. The repository holds two candidates — the tag
+`t06-submission` at `1180c8d1329…` and the value the matrix records at
+`4f3ed709d75…`. Both are ancestors of HEAD, so C78 holds either way, but C77
+asks the stated commit to match the real final submission.
+
+## 2026-09-04 Step 20 — the evidence script
+
+`backend/scripts/collect_auth_evidence.py` runs every auth flow once against a
+throwaway SQLite database and writes `docs/T07-EVIDENCE/01…11-*.md` — the eleven
+files design section 10 promises.
+
+- **Nothing is typed by hand.** Every request and response in the output came
+  from that run. Hand-assembled evidence drifts from the code invisibly: it
+  still reads like evidence.
+- **Everything goes through `redact`.** Cookie values are never printed, only
+  their names; the CSRF header is shown present and masked.
+- **Each file must carry a success and a refusal, and the script refuses to
+  write one that does not** (C129). That guard fired on the first run —
+  `07-bruteforce-blocked.md` had eight refusals and no success — which is what
+  it is for.
+
+New tests, `test_t07_evidence.py`: `test_c129_each_evidence_file_has_success_and_denial`,
+`test_c115_evidence_files_contain_no_token`, `test_c105_c106_no_plaintext_anywhere`,
+`test_c131_no_secret_in_docs`, `test_c132_screen_totals_match_hand_sum`, plus two
+that keep the absence checks honest. They read the folder; the script writes it.
+A script that judged its own output would only ever agree with itself.
+
+### Two mistakes the new tests caught in the script
+
+1. **A plaintext password in the evidence.** `02-password-storage.md` printed
+   the password in the sentence proving it was not in the stored hash —
+   precisely what C105 forbids, written while demonstrating C103. The file now
+   reports the search result without quoting the value.
+2. **An argon2-shaped specimen line.** The same file rendered
+   `$argon2id$v=19$m=…$[salt redacted]$…`, which no scanner can distinguish from
+   a leaked hash. It is now a field-by-field table.
+
+### And a real bug in the application
+
+`csrf_matches` passed `str` to `hmac.compare_digest`, which raises `TypeError`
+on anything outside ASCII. A CSRF header containing 한글 — caller-supplied, so
+trivially reachable — produced **500 instead of 403**, which makes that one
+refusal distinguishable from every other bad header. Found because the evidence
+script's "mismatched header" case used a Korean string. Fixed by comparing
+bytes; regression test in `test_t07_csrf.py`.
+
+### Also
+
+`test_c03_root_serves_login_without_auth` and
+`test_c97_app_route_redirects_when_anonymous` now exist under the names the
+matrix promises (the behaviour was already covered under other names).
+
+**Fixed criteria with a passing automated test: 36 → 43 of 47.** The four left
+are `test_c07_exactly_five_distinct_seoul_dates` (needs the five days),
+`test_c77_c78_t06_commit_is_ancestor`, `test_c92_guide_versions_match_installed`
+and `test_c127_guide_has_six_sections` — all step 21.
+
+Commands run:
+
+- `backend/.venv/Scripts/python.exe backend/scripts/collect_auth_evidence.py` —
+  11 files written.
+- `backend/.venv/Scripts/python.exe -m pytest backend/tests` — **299 passed, 4
+  skipped** (was 290 passed, 4 skipped).
+- `backend/.venv/Scripts/python.exe backend/scripts/audit_secrets.py` — 0 findings.
+
+Handoff target: **deploy first** (handoff section 4), then step 21.
+
 ## 2026-09-04 Step 18 — account deletion, the account screen, and a database that enforces its keys
 
 ### The finding worth reading first
