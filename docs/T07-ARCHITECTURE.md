@@ -825,6 +825,7 @@ docs/source/T07-OFFICIAL-ASSIGNMENT.md        원문
 docs/process/T07-AUTH-DIRECTION-2026-09-03.md 방향 결정
 docs/T07-ARCHITECTURE.md                      이 문서
 docs/T07-AUTH-OPTIONS.md                      판단 재료 (선택 전 상태 보존)
+docs/T07-AUTH-ARCHITECTURE-TARGET.md          목표 설계 (OAuth 포함). 구현 아님 — 부록에 차이표
 docs/T07-REQUIREMENTS.md                      원문을 구현 언어로 옮긴 것
 docs/T07-ACCEPTANCE-MATRIX.md                 고정 확인 항목 → 자동 검사와 1:1
 docs/T07-STUDY-PROTOCOL.md                    1일차에 고정하는 정의
