@@ -33,6 +33,35 @@ BIG_ID = sa.BigInteger().with_variant(sa.Integer, 'sqlite')
 JSON_COLUMN = sa.JSON().with_variant(JSONB, 'postgresql')
 
 
+def _reflection_foreign_key_names(foreign_keys):
+    """Return the deployed names for the two legacy reflection FKs.
+
+    The T06 tables were created before this repository adopted an Alembic
+    naming convention. PostgreSQL therefore assigned names such as
+    ``reflections_plan_id_fkey`` while SQLite reports those constraints as
+    unnamed. The migration must drop the names that are actually present in
+    PostgreSQL and retain the convention fallback that batch mode needs for
+    SQLite.
+    """
+    fallbacks = {
+        ('plan_id',): 'fk_reflections_plan_id_plans',
+        ('next_plan_id',): 'fk_reflections_next_plan_id_plans',
+    }
+    names = {}
+    for foreign_key in foreign_keys:
+        columns = tuple(foreign_key.get('constrained_columns') or ())
+        if columns in fallbacks:
+            names[columns] = foreign_key.get('name') or fallbacks[columns]
+
+    missing = [columns[0] for columns in fallbacks if columns not in names]
+    if missing:
+        raise RuntimeError(
+            'Cannot rebuild reflections foreign keys; missing columns: '
+            + ', '.join(sorted(missing))
+        )
+    return names
+
+
 def upgrade():
     op.create_table(
         'users',
@@ -123,15 +152,18 @@ def upgrade():
         batch_op.create_index(batch_op.f('ix_plans_user_id'), ['user_id'], unique=False)
         batch_op.create_foreign_key('fk_plans_user_id_users', 'users', ['user_id'], ['id'], ondelete='CASCADE')
 
-    # Rebuild the reflections foreign keys with delete actions. On SQLite batch
-    # mode recreates the table; on PostgreSQL it drops and re-adds the two
-    # constraints. Named explicitly because the originals were unnamed, and an
-    # unnamed constraint cannot be dropped portably.
+    # Rebuild the reflections foreign keys with delete actions. PostgreSQL
+    # assigned deployment-specific names to T06's formerly unnamed keys, so
+    # inspect first rather than assuming the later naming convention already
+    # applied to the existing table. SQLite still uses the convention fallback
+    # while batch mode recreates the table.
+    reflection_foreign_keys = sa.inspect(op.get_bind()).get_foreign_keys('reflections')
+    reflection_fk_names = _reflection_foreign_key_names(reflection_foreign_keys)
     with op.batch_alter_table('reflections', schema=None, naming_convention={
         'fk': 'fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s',
     }) as batch_op:
-        batch_op.drop_constraint('fk_reflections_plan_id_plans', type_='foreignkey')
-        batch_op.drop_constraint('fk_reflections_next_plan_id_plans', type_='foreignkey')
+        batch_op.drop_constraint(reflection_fk_names[('plan_id',)], type_='foreignkey')
+        batch_op.drop_constraint(reflection_fk_names[('next_plan_id',)], type_='foreignkey')
         batch_op.create_foreign_key(
             'fk_reflections_plan_id_plans', 'plans', ['plan_id'], ['id'], ondelete='CASCADE'
         )
