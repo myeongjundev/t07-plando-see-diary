@@ -155,6 +155,30 @@ def test_every_promised_evidence_file_exists():
 
 
 @skip_without_evidence
+def test_logout_evidence_replays_credentials_instead_of_anonymous_request():
+    text = (EVIDENCE / "03-logout-replay-blocked.md").read_text(encoding="utf-8")
+    requests = re.findall(r"GET /api/auth/me\nCookie: ([^\n]+)", text)
+    assert len(requests) == 2
+    assert requests[0] == requests[1]
+    assert "access=[redacted]" in requests[1]
+    assert re.findall(r"^(\d{3}) [A-Z ]+$", text, re.M) == ["200", "200", "401"]
+
+
+@skip_without_evidence
+def test_cross_account_deletion_evidence_reaches_ownership_guard():
+    text = (EVIDENCE / "08-cross-user-access-blocked.md").read_text(encoding="utf-8")
+    sections = re.split(r"^### ", text, flags=re.M)
+    deletes = [section for section in sections if "DELETE /api/tasks/" in section]
+    assert len(deletes) == 2
+    for section in deletes:
+        assert "Content-Type: application/json" in section
+        assert "X-CSRF-Token: [redacted]" in section
+        assert "404 NOT FOUND" in section
+        assert "415 UNSUPPORTED MEDIA TYPE" not in section
+        assert "refresh=[redacted]" not in section  # Cookie Path excludes task routes.
+
+
+@skip_without_evidence
 def test_c132_screen_totals_match_hand_sum():
     """The totals file adds up, read back from what it wrote.
 

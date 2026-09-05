@@ -1,7 +1,7 @@
 # 가입 · 로그인 · 로그아웃
 
 - 기준: T07-C94 · C95 · C96 · C98 · C99
-- 수집: 2026-09-04 10:40:09 +0900 · `backend/scripts/collect_auth_evidence.py` 실행 결과
+- 수집: 2026-09-05 19:54:19 +0900 · `backend/scripts/collect_auth_evidence.py` 실행 결과
 - 성공 3건 · 거절 3건
 
 계정을 만들고, 그 계정으로 들어가고, 나온다. 그리고 같은 주소로 두 번 가입되지 않는 것과, 로그인이 실패하는 두 경우가 **같은 문장·같은 상태**로 답하는 것.
@@ -14,6 +14,7 @@
 ```http
 POST /api/auth/signup
 Cookie: (없음)
+Content-Type: application/json
 
 {
   "email": "evidence-a@example.invalid",
@@ -27,9 +28,9 @@ Set-Cookie: (없음)
 
 {
   "user": {
-    "createdAt": "2026-09-04T01:40:08.925363",
+    "createdAt": "2026-09-05T10:54:19.368773",
     "email": "evidence-a@example.invalid",
-    "id": "a82c15dc-0f48-49dd-853b-dfe9569d9852"
+    "id": "07e91b6b-e57f-4a46-b46e-ad66005f67cb"
   }
 }
 ```
@@ -39,6 +40,7 @@ Set-Cookie: (없음)
 ```http
 POST /api/auth/signup
 Cookie: (없음)
+Content-Type: application/json
 
 {
   "email": "evidence-a@example.invalid",
@@ -65,6 +67,7 @@ Set-Cookie: (없음)
 ```http
 POST /api/auth/login
 Cookie: (없음)
+Content-Type: application/json
 
 {
   "email": "evidence-a@example.invalid",
@@ -78,9 +81,9 @@ Set-Cookie: __Host-pds_access=[redacted], __Secure-pds_refresh=[redacted], __Hos
 
 {
   "user": {
-    "createdAt": "2026-09-04T01:40:08.925363",
+    "createdAt": "2026-09-05T10:54:19.368773",
     "email": "evidence-a@example.invalid",
-    "id": "a82c15dc-0f48-49dd-853b-dfe9569d9852"
+    "id": "07e91b6b-e57f-4a46-b46e-ad66005f67cb"
   }
 }
 ```
@@ -91,6 +94,7 @@ Set-Cookie: __Host-pds_access=[redacted], __Secure-pds_refresh=[redacted], __Hos
 POST /api/auth/logout
 Cookie: access=[redacted], refresh=[redacted], csrf=[redacted]
 X-CSRF-Token: [redacted]
+Content-Type: application/json
 
 {}
 ```
@@ -109,6 +113,7 @@ Set-Cookie: __Host-pds_access=[redacted], __Secure-pds_refresh=[redacted], __Hos
 ```http
 POST /api/auth/login
 Cookie: (없음)
+Content-Type: application/json
 
 {
   "email": "evidence-a@example.invalid",
@@ -133,6 +138,7 @@ Set-Cookie: (없음)
 ```http
 POST /api/auth/login
 Cookie: (없음)
+Content-Type: application/json
 
 {
   "email": "nobody@example.invalid",

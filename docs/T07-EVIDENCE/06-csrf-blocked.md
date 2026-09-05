@@ -1,7 +1,7 @@
 # 교차 사이트 요청 막기
 
 - 기준: 설명서 ⑥ · 설계 5절
-- 수집: 2026-09-04 10:40:10 +0900 · `backend/scripts/collect_auth_evidence.py` 실행 결과
+- 수집: 2026-09-05 19:54:22 +0900 · `backend/scripts/collect_auth_evidence.py` 실행 결과
 - 성공 1건 · 거절 4건
 
 같은 로그인 상태에서 **정상 · 헤더 없음 · 헤더 불일치 · JSON 아님 · 교차 출처** 다섯 가지. 달라진 것은 요청의 모양뿐이다.
@@ -13,8 +13,9 @@
 
 ```http
 POST /api/plans
-Cookie: access=[redacted], refresh=[redacted], csrf=[redacted]
+Cookie: access=[redacted], csrf=[redacted]
 X-CSRF-Token: [redacted]
+Content-Type: application/json
 
 {
   "title": "합성 계획",
@@ -33,16 +34,16 @@ Set-Cookie: (없음)
 {
   "plan": {
     "carriedImprovement": null,
-    "createdAt": "2026-09-04T01:40:10.253625+00:00",
+    "createdAt": "2026-09-05T10:54:22.039919+00:00",
     "durationUnit": "minutes",
     "endDate": "2026-09-07",
     "estimatedMinutes": 600,
-    "id": "41aea088-45d5-4b81-b11a-caa3b352d01c",
+    "id": "6f42506d-4f52-4e61-a4ac-7f94b26c0ba7",
     "priority": "high",
     "startDate": "2026-09-01",
     "successCriterion": "합성 성공 기준",
     "title": "합성 계획",
-    "updatedAt": "2026-09-04T01:40:10.253627+00:00"
+    "updatedAt": "2026-09-05T10:54:22.039919+00:00"
   }
 }
 ```
@@ -51,7 +52,8 @@ Set-Cookie: (없음)
 
 ```http
 POST /api/plans
-Cookie: access=[redacted], refresh=[redacted], csrf=[redacted]
+Cookie: access=[redacted], csrf=[redacted]
+Content-Type: application/json
 
 {
   "title": "합성 계획",
@@ -79,8 +81,9 @@ Set-Cookie: (없음)
 
 ```http
 POST /api/plans
-Cookie: access=[redacted], refresh=[redacted], csrf=[redacted]
+Cookie: access=[redacted], csrf=[redacted]
 X-CSRF-Token: [redacted]
+Content-Type: application/json
 
 {
   "title": "합성 계획",
@@ -128,9 +131,10 @@ Set-Cookie: (없음)
 
 ```http
 POST /api/plans
-Cookie: access=[redacted], refresh=[redacted], csrf=[redacted]
+Cookie: access=[redacted], csrf=[redacted]
 Origin: https://attacker.example
 X-CSRF-Token: [redacted]
+Content-Type: application/json
 
 {
   "title": "합성 계획",

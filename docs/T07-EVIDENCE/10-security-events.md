@@ -1,7 +1,7 @@
 # 남은 기록과, 거기 없는 것
 
 - 기준: T07-C115 · C131 · 설계 7절
-- 수집: 2026-09-04 10:40:11 +0900 · `backend/scripts/collect_auth_evidence.py` 실행 결과
+- 수집: 2026-09-05 19:54:26 +0900 · `backend/scripts/collect_auth_evidence.py` 실행 결과
 - 성공 1건 · 거절 1건
 
 위의 모든 실행이 감사 기록에 무엇을 남겼는지, 그리고 **거기에 비밀번호·토큰 원문이 없다는 것**.
@@ -15,6 +15,7 @@
 POST /api/auth/logout
 Cookie: access=[redacted], refresh=[redacted], csrf=[redacted]
 X-CSRF-Token: [redacted]
+Content-Type: application/json
 
 {}
 ```
@@ -33,6 +34,7 @@ Set-Cookie: __Host-pds_access=[redacted], __Secure-pds_refresh=[redacted], __Hos
 ```http
 POST /api/auth/login
 Cookie: (없음)
+Content-Type: application/json
 
 {
   "email": "evidence-a@example.invalid",

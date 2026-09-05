@@ -1,7 +1,7 @@
 # 세션 만료 — 유휴와 절대
 
 - 기준: T07-C111
-- 수집: 2026-09-04 10:40:11 +0900 · `backend/scripts/collect_auth_evidence.py` 실행 결과
+- 수집: 2026-09-05 19:54:25 +0900 · `backend/scripts/collect_auth_evidence.py` 실행 결과
 - 성공 2건 · 거절 2건
 
 48시간 쓰지 않으면 끊기고, 14일이 지나면 얼마나 부지런히 썼든 끊긴다.
@@ -22,9 +22,9 @@ Set-Cookie: (없음)
 
 {
   "user": {
-    "createdAt": "2026-09-04T01:40:11.417792",
+    "createdAt": "2026-09-05T10:54:25.402671",
     "email": "evidence-a@example.invalid",
-    "id": "803ec0a8-b415-427e-a6a7-1a93854b8513"
+    "id": "feb01ca6-252e-4e20-a69d-1c95b420d9f2"
   }
 }
 ```
@@ -53,6 +53,7 @@ Set-Cookie: (없음)
 ```http
 POST /api/auth/refresh
 Cookie: access=[redacted], refresh=[redacted], csrf=[redacted]
+Content-Type: application/json
 
 {}
 ```
@@ -82,9 +83,9 @@ Set-Cookie: (없음)
 
 {
   "user": {
-    "createdAt": "2026-09-04T01:40:11.417792",
+    "createdAt": "2026-09-05T10:54:25.402671",
     "email": "evidence-a@example.invalid",
-    "id": "803ec0a8-b415-427e-a6a7-1a93854b8513"
+    "id": "feb01ca6-252e-4e20-a69d-1c95b420d9f2"
   }
 }
 ```

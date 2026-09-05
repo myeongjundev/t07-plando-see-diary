@@ -1,7 +1,7 @@
 # 무차별 대입 잠금
 
 - 기준: 설명서 ⑤ · 설계 6절
-- 수집: 2026-09-04 10:40:10 +0900 · `backend/scripts/collect_auth_evidence.py` 실행 결과
+- 수집: 2026-09-05 19:54:23 +0900 · `backend/scripts/collect_auth_evidence.py` 실행 결과
 - 성공 2건 · 거절 8건
 
 같은 (계정, 주소)로 다섯 번 틀리면 잠긴다. **없는 계정도 똑같이 잠긴다** — 안 그러면 「잠기지 않는다」가 곧 「그런 계정 없다」가 된다.
@@ -14,6 +14,7 @@
 ```http
 POST /api/auth/login
 Cookie: (없음)
+Content-Type: application/json
 
 {
   "email": "evidence-a@example.invalid",
@@ -27,9 +28,9 @@ Set-Cookie: __Host-pds_access=[redacted], __Secure-pds_refresh=[redacted], __Hos
 
 {
   "user": {
-    "createdAt": "2026-09-04T01:40:10.422577",
+    "createdAt": "2026-09-05T10:54:22.599987",
     "email": "evidence-a@example.invalid",
-    "id": "b3b586f1-6be9-4c88-bb58-540f182ff00a"
+    "id": "bbc2136f-ef4d-4d3e-b25a-55f2764c3894"
   }
 }
 ```
@@ -39,6 +40,7 @@ Set-Cookie: __Host-pds_access=[redacted], __Secure-pds_refresh=[redacted], __Hos
 ```http
 POST /api/auth/login
 Cookie: (없음)
+Content-Type: application/json
 
 {
   "email": "evidence-a@example.invalid",
@@ -63,6 +65,7 @@ Set-Cookie: (없음)
 ```http
 POST /api/auth/login
 Cookie: (없음)
+Content-Type: application/json
 
 {
   "email": "evidence-a@example.invalid",
@@ -87,6 +90,7 @@ Set-Cookie: (없음)
 ```http
 POST /api/auth/login
 Cookie: (없음)
+Content-Type: application/json
 
 {
   "email": "evidence-a@example.invalid",
@@ -111,6 +115,7 @@ Set-Cookie: (없음)
 ```http
 POST /api/auth/login
 Cookie: (없음)
+Content-Type: application/json
 
 {
   "email": "evidence-a@example.invalid",
@@ -135,6 +140,7 @@ Set-Cookie: (없음)
 ```http
 POST /api/auth/login
 Cookie: (없음)
+Content-Type: application/json
 
 {
   "email": "evidence-a@example.invalid",
@@ -159,6 +165,7 @@ Set-Cookie: (없음)
 ```http
 POST /api/auth/login
 Cookie: (없음)
+Content-Type: application/json
 
 {
   "email": "evidence-a@example.invalid",
@@ -184,6 +191,7 @@ Retry-After: 60
 ```http
 POST /api/auth/login
 Cookie: (없음)
+Content-Type: application/json
 
 {
   "email": "evidence-a@example.invalid",
@@ -209,6 +217,7 @@ Retry-After: 60
 ```http
 POST /api/auth/login
 Cookie: (없음)
+Content-Type: application/json
 
 {
   "email": "nobody@example.invalid",
@@ -234,6 +243,7 @@ Retry-After: 60
 ```http
 POST /api/auth/login
 Cookie: (없음)
+Content-Type: application/json
 
 {
   "email": "evidence-a@example.invalid",
@@ -247,9 +257,9 @@ Set-Cookie: __Host-pds_access=[redacted], __Secure-pds_refresh=[redacted], __Hos
 
 {
   "user": {
-    "createdAt": "2026-09-04T01:40:10.422577",
+    "createdAt": "2026-09-05T10:54:22.599987",
     "email": "evidence-a@example.invalid",
-    "id": "b3b586f1-6be9-4c88-bb58-540f182ff00a"
+    "id": "bbc2136f-ef4d-4d3e-b25a-55f2764c3894"
   }
 }
 ```

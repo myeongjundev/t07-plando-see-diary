@@ -1,7 +1,7 @@
 # 로그아웃 전후, 같은 요청
 
 - 기준: T07-C108 · C109 · C110 · C114
-- 수집: 2026-09-04 10:40:09 +0900 · `backend/scripts/collect_auth_evidence.py` 실행 결과
+- 수집: 2026-09-05 19:54:20 +0900 · `backend/scripts/collect_auth_evidence.py` 실행 결과
 - 성공 2건 · 거절 1건
 
 **같은 주소·같은 방식**의 요청을 로그아웃 앞뒤로 한 번씩. 달라진 것은 로그아웃 여부뿐이다.
@@ -22,9 +22,9 @@ Set-Cookie: (없음)
 
 {
   "user": {
-    "createdAt": "2026-09-04T01:40:09.473357",
+    "createdAt": "2026-09-05T10:54:20.367368",
     "email": "evidence-a@example.invalid",
-    "id": "1e4cfd7f-9464-4b2d-af5f-657f8ba12b76"
+    "id": "fad1dee4-acc2-4721-9ba9-3039a8df72e2"
   }
 }
 ```
@@ -35,6 +35,7 @@ Set-Cookie: (없음)
 POST /api/auth/logout
 Cookie: access=[redacted], refresh=[redacted], csrf=[redacted]
 X-CSRF-Token: [redacted]
+Content-Type: application/json
 
 {}
 ```
@@ -52,7 +53,7 @@ Set-Cookie: __Host-pds_access=[redacted], __Secure-pds_refresh=[redacted], __Hos
 
 ```http
 GET /api/auth/me
-Cookie: (없음)
+Cookie: access=[redacted], refresh=[redacted], csrf=[redacted]
 ```
 
 ```http
@@ -66,6 +67,8 @@ Set-Cookie: (없음)
   }
 }
 ```
+
+로그아웃 전에 보관한 쿠키 원문을 테스트 클라이언트에 그대로 복원해 재전송했다. 출력에서만 값을 가렸다. 쿠키가 없는 요청을 보낸 것이 아니다.
 
 두 요청의 메서드와 주소가 같다: `GET /api/auth/me`. 첫 번째는 200, 세 번째는 401. 중간에 일어난 일은 로그아웃뿐이다 (C109 · C110).
 

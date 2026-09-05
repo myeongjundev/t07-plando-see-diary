@@ -1,6 +1,63 @@
 # T07 project status (T06 history retained below)
 
-Updated: 2026-09-04 KST
+Updated: 2026-09-05 KST
+
+## 2026-09-05 PostgreSQL passed; Render configuration ready
+
+The account-access blocker below is resolved. Neon project `green-pine-50634235`
+and Render service `srv-dabe1mu7bikc73bv2lmg` are accessible through GitHub sign-in.
+
+- Created schema-only test branch `t07-test-20260905`,
+  `br-snowy-salad-a65iof8l`, expires 2026-09-06 19:57 KST.
+- Full suite on that PostgreSQL 18 branch: **312 passed, 1 skipped**, 131.31s.
+  The three PostgreSQL-only tests now pass. Remaining skip: 46/47 promised checks,
+  with real five-day observation still outstanding.
+- Found and verified backup `backup-20260905-before-t07-claim`,
+  `br-rough-feather-a6lo5utr`, parent production. SQL counts: plans 7, tasks 8,
+  execution_logs 3, reflections 1. Both excluded task IDs have deleted_at set.
+- Read-only live API check: all seven plan IDs match the configured partition;
+  all four excluded plans have zero active tasks. Preserved plans expose 6, 0, 0
+  active tasks respectively.
+- Saved Render environment using **Save only**: generated independent 32-byte
+  JWT/IP keys in Render and added the five BOOT_TASK/claim-list settings from
+  render.yaml. Preserved existing DATABASE_URL and CLAIM_EMAIL/CLAIM_PASSWORD.
+  No deployment or production data change has run yet.
+- Repository switch is prepared for the public T07 URL. Git Provider currently
+  lists only T06; a public URL permits deployment without expanding GitHub access,
+  but requires manual deploys unless a Blueprint is configured.
+- Requested execution-time confirmation for permanent cleanup of the four empty
+  plans and two already-soft-deleted tasks. Do not execute the repoint/claim until
+  that reply arrives. The fixed IDs remain in render.yaml for review.
+
+## 2026-09-05 Guide drafted; evidence corrected; deployment awaiting account access
+
+- Added `T07-AUTH-GUIDE.md`: six sections, installed library versions, four source
+  flows, evidence links, known limitations. Personal judgment remains for the user.
+- Added `T07-SUBMISSION.md` with verification lines and explicit unverified items.
+  Preserved the T06 `SUBMISSION.md`; matrix submission links now name the T07 file.
+- Corrected evidence collection: replay the original cookies after logout; send
+  valid JSON for cross-account deletion (404 ownership denial, not 415 format
+  rejection); report only cookies whose Path matches the request. Forged identity
+  now names an actual second user and includes a body attempt. Compare both plan
+  and task counts before/after. Regenerated all eleven synthetic evidence files.
+- Added three promised guide/ancestry checks and two evidence regression checks.
+  Full backend: **309 passed, 4 skipped**. Following final collector changes,
+  guide/evidence/matrix checks: **15 passed, 1 skipped**. Matrix: **46/47** promised
+  tests exist. Remaining skips: real five-day coverage promise and three PostgreSQL
+  tests. Frontend unchanged; earlier same-session checks: 71 passed and build passed.
+- Secret-pattern scan: **0 findings** across worktree, frontend build and 1,308 Git
+  objects. `git diff --check` passed. This is a pattern scan, not proof of every secret.
+- No production change: Render still needs sign-in. The accessible Neon account
+  shows one organization and no projects; the existing T06 DB is not accessible
+  there. No local DB credentials are configured, and Docker's engine is not running.
+  Requested login to the account containing the existing T06 project.
+- PostgreSQL verification, Neon backup, Render repoint, claim, deployed hash
+  benchmark/version verification and real five-day use remain pending. With five
+  added tests, PostgreSQL-enabled full-suite target is now **312 passed, 1 skipped**.
+
+Next: `docs/process/T07-HANDOFF-2026-09-05.md`. Deployment sequence is still
+section 4 of the 09-04 handoff. Do not use the older architecture section's
+two-deploy claim description; `deploy/start.sh` performs the interleaved migration.
 
 ## 2026-09-04 C77 settled, and the deploy confirmed not done
 

@@ -100,10 +100,12 @@ class Browser:
         found = self.client.get_cookie(name, path=path)
         return found.value if found else None
 
-    def carried(self) -> str:
+    def carried(self, request_path: str) -> str:
         names = [
             label
             for name, label in COOKIE_NAMES.items()
+            if name != REFRESH_COOKIE or request_path.split("?", 1)[0] == REFRESH_PATH
+            or request_path.startswith(REFRESH_PATH + "/")
             if self.cookie(name, REFRESH_PATH if name == REFRESH_COOKIE else "/")
         ]
         return ", ".join(f"{name}=[redacted]" for name in names) or "(없음)"
@@ -117,11 +119,12 @@ class Browser:
         kwargs = {"headers": sent}
         if body is not None:
             kwargs["json"] = body
+            sent.setdefault("Content-Type", "application/json")
         # Read before sending. The response updates the cookie jar, so asking
         # afterwards reports the state the request produced rather than the one
         # it carried -- which would print "Cookie: (없음)" on the logout that
         # C109 exists to show carrying a session.
-        carried = self.carried()
+        carried = self.carried(path)
         response = self.client.open(path, method=method, **kwargs)
         return Exchange(self, method, path, body, sent, response, note, carried)
 
@@ -367,10 +370,21 @@ def file_03(app):
     browser = Browser(app, "A")
     signup(browser, A)
     login(browser, A)
+    saved_cookies = [
+        (name, REFRESH_PATH if name == REFRESH_COOKIE else "/",
+         browser.cookie(name, REFRESH_PATH if name == REFRESH_COOKIE else "/"))
+        for name in COOKIE_NAMES
+    ]
     doc.add(browser.send("GET", "/api/auth/me"), "로그아웃 전 — `GET /api/auth/me`")
     doc.add(browser.send("POST", "/api/auth/logout", {}), "로그아웃")
+    for name, path, value in saved_cookies:
+        assert value is not None
+        browser.client.set_cookie(name, value, path=path)
     after = doc.add(browser.send("GET", "/api/auth/me"), "로그아웃 후 — **같은 요청**")
+    assert after.status == 401
     doc.note(
+        "로그아웃 전에 보관한 쿠키 원문을 테스트 클라이언트에 그대로 복원해 재전송했다. "
+        "출력에서만 값을 가렸다. 쿠키가 없는 요청을 보낸 것이 아니다.\n\n"
         "두 요청의 메서드와 주소가 같다: `GET /api/auth/me`. 첫 번째는 200, 세 번째는 "
         f"{after.status}. 중간에 일어난 일은 로그아웃뿐이다 (C109 · C110).\n\n"
         "Access 토큰은 그 사이에 만료하지 않았다 — 서명도 유효하고 "
@@ -566,10 +580,15 @@ def file_08(app):
     login(bob, B)
     alice_plan, alice_task = furnish(alice, "앨리스의 합성 계획")
     bob_plan, bob_task = furnish(bob, "밥의 합성 계획")
+    bob_user_id = bob.send("GET", "/api/auth/me").response.get_json()["user"]["id"]
 
     def counts(browser):
         body = browser.send("GET", "/api/plans").response.get_json()
-        return len(body["plans"])
+        return {
+            "plans": len(body["plans"]),
+            "tasks": sum(len(browser.send("GET", f"/api/plans/{plan['id']}/tasks")
+                             .response.get_json()["tasks"]) for plan in body["plans"]),
+        }
 
     before = {"A": counts(alice), "B": counts(bob)}
 
@@ -579,21 +598,28 @@ def file_08(app):
         alice.send("PATCH", f"/api/plans/{bob_plan['id']}", {"estimatedMinutes": 1}),
         "A → B 수정 (C118)",
     )
-    doc.add(alice.send("DELETE", f"/api/tasks/{bob_task['id']}"), "A → B 삭제 (C119)")
+    denied = doc.add(alice.send("DELETE", f"/api/tasks/{bob_task['id']}", {}), "A → B 삭제 (C119)")
+    assert denied.status == 404
     doc.add(bob.send("GET", f"/api/plans/{alice_plan['id']}"), "B → A 읽기 (C120)")
     doc.add(
         bob.send("PATCH", f"/api/plans/{alice_plan['id']}", {"estimatedMinutes": 1}),
         "B → A 수정 (C120)",
     )
-    doc.add(bob.send("DELETE", f"/api/tasks/{alice_task['id']}"), "B → A 삭제 (C120)")
+    denied = doc.add(bob.send("DELETE", f"/api/tasks/{alice_task['id']}", {}), "B → A 삭제 (C120)")
+    assert denied.status == 404
     forged = doc.add(
         alice.send(
             "GET",
-            f"/api/plans?userId={bob_plan['id']}",
-            headers={"X-User-Id": "B"},
+            f"/api/plans?userId={bob_user_id}",
+            headers={"X-User-Id": bob_user_id},
         ),
         "주소·헤더에 남을 적어 보냄 — 그래도 내 것만 (C123)",
     )
+    forged_body = doc.add(
+        alice.send("POST", "/api/plans", {**PLAN, "userId": bob_user_id}),
+        "본문에 B의 계정 ID를 넣어 생성 — 허용하지 않는 필드라 거절 (C123)",
+    )
+    assert forged_body.status == 400
     doc.add(
         Browser(app, "anon").send("GET", "/api/plans"),
         "로그인하지 않고 자료 요청 (C124)",
@@ -601,17 +627,19 @@ def file_08(app):
     listed = doc.add(alice.send("GET", "/api/plans"), "목록에 남의 것이 없다 (C125)")
 
     after = {"A": counts(alice), "B": counts(bob)}
+    assert before == after
     body = json.dumps(listed.response.get_json(), ensure_ascii=False)
     doc.note(
         "## 거절 앞뒤 건수 (C122)\n\n"
-        "| 계정 | 시도 전 | 시도 후 |\n| --- | ---: | ---: |\n"
-        f"| A | {before['A']} | {after['A']} |\n"
-        f"| B | {before['B']} | {after['B']} |\n\n"
+        "| 계정 | 계획 전 | 계획 후 | 할 일 전 | 할 일 후 |\n| --- | ---: | ---: | ---: | ---: |\n"
+        f"| A | {before['A']['plans']} | {after['A']['plans']} | {before['A']['tasks']} | {after['A']['tasks']} |\n"
+        f"| B | {before['B']['plans']} | {after['B']['plans']} | {before['B']['tasks']} | {after['B']['tasks']} |\n\n"
         f"- A의 목록에 B의 계획 ID가 들어 있는가: "
         f"**{'있다' if bob_plan['id'] in body else '없다'}** (C125)\n"
         f"- 위조한 요청이 돌려준 계획 수: "
         f"{len(forged.response.get_json().get('plans', []))}건 — 내 것뿐 (C123)\n\n"
-        "거절은 **404**다. 403은 「있지만 당신 것이 아니다」를 말해 주고, 그건 남의 ID가 "
+        "타인 자료 읽기·수정·삭제 거절은 **404**다. 위조한 생성 본문은 400, 무인증은 401이다. "
+        "403은 「있지만 당신 것이 아니다」를 말해 주고, 그건 남의 ID가 "
         "실재하는지 확인해 주는 통로가 된다 (C121). 거절을 만드는 곳은 세 파일뿐이다 — "
         "`guards.py` · `ownership.py` · `csrf.py` (C126)."
     )

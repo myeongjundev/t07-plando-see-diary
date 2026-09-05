@@ -1,7 +1,7 @@
 # 비밀번호를 어떻게 맡아 두는가
 
 - 기준: T07-C101 ~ C107
-- 수집: 2026-09-04 10:40:09 +0900 · `backend/scripts/collect_auth_evidence.py` 실행 결과
+- 수집: 2026-09-05 19:54:20 +0900 · `backend/scripts/collect_auth_evidence.py` 실행 결과
 - 성공 2건 · 거절 1건
 
 저장된 값의 모양과, **같은 비밀번호로 만든 두 계정의 저장 값이 서로 다른 것**. 뒤쪽은 인증 서비스를 골랐다면 만들 수 없는 장면이다.
@@ -14,6 +14,7 @@
 ```http
 POST /api/auth/signup
 Cookie: (없음)
+Content-Type: application/json
 
 {
   "email": "same-1@example.invalid",
@@ -27,9 +28,9 @@ Set-Cookie: (없음)
 
 {
   "user": {
-    "createdAt": "2026-09-04T01:40:09.247508",
+    "createdAt": "2026-09-05T10:54:19.934839",
     "email": "same-1@example.invalid",
-    "id": "450894d3-31d8-4a4d-9694-0320f5d49c34"
+    "id": "29c1045e-413f-4177-8fe0-942349c498e5"
   }
 }
 ```
@@ -39,6 +40,7 @@ Set-Cookie: (없음)
 ```http
 POST /api/auth/signup
 Cookie: (없음)
+Content-Type: application/json
 
 {
   "email": "same-2@example.invalid",
@@ -52,9 +54,9 @@ Set-Cookie: (없음)
 
 {
   "user": {
-    "createdAt": "2026-09-04T01:40:09.283424",
+    "createdAt": "2026-09-05T10:54:19.979904",
     "email": "same-2@example.invalid",
-    "id": "501e4524-48fc-4d09-9d00-b929ccc224f2"
+    "id": "dbd05d47-53b5-4aea-a89b-f05693c24e77"
   }
 }
 ```
@@ -64,6 +66,7 @@ Set-Cookie: (없음)
 ```http
 POST /api/auth/signup
 Cookie: (없음)
+Content-Type: application/json
 
 {
   "email": "same-1@example.invalid",
