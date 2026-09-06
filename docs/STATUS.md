@@ -8,7 +8,7 @@ The existing Render service now serves the public T07 repository at
 `https://t06-plando-see-diary.onrender.com`. Production migrations, the reviewed
 T06 data claim, and the deployed-instance hashing benchmark all completed.
 
-- Production source/deployed commit: `2723b63c0b93e8dad54f03c3262f08fadeb36922`.
+- Application-code production baseline: `2723b63c0b93e8dad54f03c3262f08fadeb36922`. The final documentation/defaults commit is deployed separately so the Render source and `main` remain aligned.
   The first production migration attempt exposed an assumed PostgreSQL foreign-key
   name; the migration now introspects the deployed constraint name and is covered
   by three regression tests. Full backend: **312 passed, 4 skipped**.

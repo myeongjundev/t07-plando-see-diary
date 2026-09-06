@@ -34,7 +34,7 @@ AI 말을 따르지 않은 일: 본인 작성 대기. 없었다면 이유를 직
 
 - Neon 테스트 브랜치의 PostgreSQL 검사 결과: 2026-09-05 `t07-test-20260905`에서 312 passed, 1 skipped. 스킵은 실제 5일 검사 존재 여부이며 PostgreSQL 전용 세 건은 통과.
 - Neon 이관 전 백업: `backup-20260905-before-t07-claim` (`br-rough-feather-a6lo5utr`). 2026-09-05 20:16 KST 조회에서 계획 7·할 일 8·실행 기록 3·회고 1건 확인. 두 제외 할 일의 soft-delete 상태도 확인.
-- T07 배포: `2723b63c0b93e8dad54f03c3262f08fadeb36922`, 2026-09-06.
+- T07 애플리케이션 코드 기준: `2723b63c0b93e8dad54f03c3262f08fadeb36922`, 2026-09-06. 운영 기록과 안전 기본값을 담은 현재 `main`을 최종 배포한다.
   `/api/live` 200, 익명 `/api/auth/me` 401, `/app` 접근 시 `/login` 화면을 확인.
 - T06 자료 이관: 계획 3건 claim, 빈 테스트 계획 4건과 기존 soft-delete
   할 일 2건 정리. 이관 전 7건 중 주인 없는 계획은 이관 후 0건.
