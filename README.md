@@ -18,8 +18,8 @@
 </div>
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/plan-dark.png">
-  <img alt="플랜두씨 다이어리의 계획 화면" src="docs/screenshots/plan-light.png">
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/login-hero-dark.png">
+  <img alt="로그인한 사용자에게 본인 계획만 보여주는 플랜두씨 다이어리 로그인 화면" src="docs/screenshots/login-hero.png">
 </picture>
 
 > 공개 화면과 문서의 예시는 합성 데이터입니다. 실제 개인 기록과 인증 정보는 저장소에
@@ -43,6 +43,21 @@ See 화면은 예상·실제·차이를 계산할 뿐 아니라 **그 숫자를 
 | 핵심 과제 | 신뢰할 수 있는 시간 집계, 계정별 데이터 격리, 안전한 세션 관리 |
 | 운영 환경 | Render의 단일 Docker 서비스 + Neon PostgreSQL |
 | 현재 상태 | T07 기능 운영 배포 완료 · 실제 5일 관찰 진행 중 |
+
+## T07에서 확장한 인증 경계
+
+T06의 공개형 다이어리를 단순히 로그인 화면으로 가린 것이 아니라, 저장 모델과 모든 데이터
+접근 경로를 계정 기준으로 다시 설계했습니다. 기존 기록은 운영 DB에서 새 계정으로 안전하게
+승계하고, 이후 목록·단건·집계·내보내기까지 서버가 현재 세션의 사용자로 범위를 정합니다.
+
+가입 화면은 비밀번호 조건과 강도를 즉시 설명하지만, 최종 판단은 서버가 다시 수행합니다.
+가입 성공 자체로 세션을 만들지 않고 곧바로 **일반 로그인 API를 다시 호출**합니다. 따라서
+가입 직후와 기존 사용자의 로그인 사이에 서로 다른 세션 발급 경로가 생기지 않습니다.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/signup-hero-dark.png">
+  <img alt="서버에서도 다시 검증되는 플랜두씨 다이어리 회원가입 화면" src="docs/screenshots/signup-hero.png">
+</picture>
 
 ## 핵심 기능
 
@@ -71,6 +86,7 @@ See 화면은 예상·실제·차이를 계산할 뿐 아니라 **그 숫자를 
 ### Account · 내 기록 보호하기
 
 - 회원가입, 로그인, 로그아웃, 비밀번호 변경, 계정 삭제
+- 회원가입 직후에도 기존 사용자와 동일한 로그인 경로를 거쳐 세션 발급
 - 로그인하지 않은 사용자의 앱 화면 접근 차단
 - 모든 조회·수정·삭제를 현재 계정 소유 데이터로 제한
 - 비밀번호 변경과 로그아웃 즉시 기존 세션 폐기
@@ -205,6 +221,67 @@ Python 기본 방식 대신 `Decimal(ROUND_HALF_UP)`으로 고정해 손계산�
 
 직접 구현한 인증 흐름 위에 검증된 라이브러리의 암호 primitives를 사용했습니다. 해싱이나
 JWT 알고리즘 자체를 직접 만들지 않았습니다.
+
+### 회원가입부터 보호 API까지
+
+```mermaid
+flowchart LR
+    subgraph Signup[회원가입]
+      SF[React 가입 폼] --> UQ[JSON · Origin 검사]
+      UQ --> VP[서버 입력·비밀번호 정책 검증]
+      VP --> AH[Argon2id 해싱]
+      AH --> UD[(users · email UNIQUE)]
+    end
+
+    UD -->|201 후 같은 로그인 API 호출| LI
+
+    subgraph Login[로그인]
+      LI[POST /api/auth/login] --> TH[DB 기반 시도 제한]
+      TH --> PV[Argon2id 검증]
+      PV --> SS[(refresh_sessions)]
+      SS --> CK[Access · Refresh · CSRF 쿠키]
+    end
+
+    CK --> PR[보호 API 요청]
+    PR --> JV[JWT 서명 · exp 검증]
+    JV --> SB[sid 생존 · sub 소유자 검증]
+    SB --> OW[현재 사용자로 ownership scope]
+    OW --> DATA[(사용자 데이터)]
+
+    CK -->|Access 만료| RF[Refresh + Origin + CSRF]
+    RF -->|정상| ROT[토큰 원자적 회전]
+    ROT --> CK
+    RF -->|이미 쓴 토큰 재사용| RV[세션 계열 전체 폐기]
+```
+
+이 구조의 핵심은 브라우저가 보낸 사용자 ID가 아니라 **검증된 세션의 사용자 ID만** 데이터
+조회에 사용한다는 점입니다. Access JWT의 서명만 맞아도 통과시키지 않고, `sid`가 가리키는
+DB 세션이 살아 있으며 `sub`가 그 세션의 소유자와 같아야 합니다.
+
+### 가입과 로그인에서 적용한 방어
+
+| 단계 | 방어와 이유 |
+| --- | --- |
+| 요청 입구 | JSON 요청과 허용된 Origin만 받아 단순 폼 전송과 교차 출처 요청을 거절 |
+| 회원가입 | 프런트 안내와 별개로 서버가 8자·영문·숫자 조건을 재검증하고, DB UNIQUE로 동시 중복 가입 차단 |
+| 비밀번호 저장 | 임의 salt를 포함한 Argon2id 결과만 저장하고 원문은 응답·로그·보안 이벤트에 기록하지 않음 |
+| 계정 탐색 방지 | 없는 이메일도 dummy Argon2 검증을 수행하고, 틀린 비밀번호와 같은 상태·문구로 응답 |
+| 무차별 대입 | 계정 조회·해싱 전에 DB 기반 잠금을 확인하며, 원본 IP 대신 비밀키 HMAC만 저장 |
+| 세션 발급 | Access·Refresh는 HttpOnly 쿠키, CSRF 값만 JavaScript가 읽을 수 있는 별도 쿠키로 전달 |
+| 자료 접근 | 인증 가드 뒤에서 모든 쿼리를 현재 사용자로 제한하고 타인 자료는 404로 처리 |
+| 세션 종료 | 로그아웃은 서버 세션을 먼저 폐기한 뒤 쿠키를 지우고, 비밀번호 변경은 다른 세션까지 폐기 |
+
+### 세 쿠키의 역할 분리
+
+| 쿠키 | JavaScript 접근 | SameSite / Path | 역할 |
+| --- | --- | --- | --- |
+| `__Host-pds_access` | 불가 | Lax / `/` | 10분 Access JWT, 매 요청의 인증 후보 |
+| `__Secure-pds_refresh` | 불가 | Strict / `/api/auth` | 세션 연장용 난수 원문, DB에는 SHA-256만 저장 |
+| `__Host-pds_csrf` | 가능 | Lax / `/` | 상태 변경 요청의 `X-CSRF-Token`과 일치 여부 확인 |
+
+토큰은 URL, `localStorage`, `sessionStorage`, JSON 응답 본문에 넣지 않습니다. Access 만료 시
+프런트는 Refresh 요청을 한 번만 수행하도록 직렬화하고, 서버는 토큰을 새 값으로 회전합니다.
+이미 사용된 Refresh가 다시 오면 후계 토큰까지 포함한 세션 계열 전체를 폐기합니다.
 
 | 영역 | 구현 |
 | --- | --- |
