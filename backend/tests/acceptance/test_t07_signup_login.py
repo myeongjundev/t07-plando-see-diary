@@ -222,6 +222,32 @@ def test_the_deployments_own_origin_is_accepted(client):
     assert response.status_code == 200
 
 
+def test_the_public_https_origin_is_accepted_behind_a_tls_terminator(client):
+    """Render forwards HTTPS to Waitress over HTTP without changing Host."""
+    signup(client)
+    response = client.post(
+        "/api/auth/login",
+        json={"email": EMAIL, "password": PASSWORD},
+        headers={
+            "Origin": "https://localhost",
+            "X-Forwarded-Proto": "http, https",
+        },
+    )
+    assert response.status_code == 200
+
+
+def test_a_forwarded_scheme_does_not_admit_a_foreign_origin(client):
+    response = client.post(
+        "/api/auth/login",
+        json={"email": EMAIL, "password": PASSWORD},
+        headers={
+            "Origin": "https://attacker.example",
+            "X-Forwarded-Proto": "https",
+        },
+    )
+    assert response.status_code == 403
+
+
 def test_an_extra_origin_can_be_configured_for_the_dev_server(monkeypatch):
     """The Vite dev server runs on another port and must be able to log in."""
     monkeypatch.setenv("ALLOWED_ORIGINS", "http://localhost:5173")

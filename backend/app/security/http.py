@@ -35,7 +35,18 @@ def allowed_origins() -> set[str]:
     configured = os.getenv("ALLOWED_ORIGINS", "")
     extra = {value.strip() for value in configured.split(",") if value.strip()}
     parts = urlsplit(request.host_url)
-    return {f"{parts.scheme}://{parts.netloc}"} | extra
+
+    # Render terminates TLS before forwarding the request to Waitress. Flask
+    # therefore sees ``http`` here even though the browser correctly sends an
+    # ``https`` Origin. Render appends the public scheme to
+    # X-Forwarded-Proto; take the rightmost value for the same reason
+    # ``client_ip`` takes the rightmost X-Forwarded-For entry. We still build
+    # the origin from Flask's Host, so a foreign Origin is never admitted just
+    # because it says ``https``.
+    forwarded = request.headers.get("X-Forwarded-Proto", "")
+    forwarded_scheme = forwarded.split(",")[-1].strip().lower()
+    scheme = forwarded_scheme if forwarded_scheme in {"http", "https"} else parts.scheme
+    return {f"{scheme}://{parts.netloc}"} | extra
 
 
 def origin_is_allowed() -> bool:
