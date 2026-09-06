@@ -1,6 +1,33 @@
 # T07 project status (T06 history retained below)
 
-Updated: 2026-09-06 KST
+Updated: 2026-09-07 KST
+
+## 2026-09-07 settings page prepared locally; observation deployment remains frozen
+
+The long export and account sections were removed from the end of the daily
+Plan·Do·See screen and placed on a dedicated protected `/settings` route. The
+signed-in account bar now links to Settings from `/app`, links back to the diary
+from `/settings`, and keeps logout available in both places.
+
+- `/settings` contains profile email/join date, full JSON export, password change,
+  and the existing password-confirmed account deletion flow and deletion warning.
+- Flask explicitly serves the SPA shell at `/settings` and applies `no-store`; the
+  route uses the same `RequireSession` gate as `/app`. Unknown subpaths still 404.
+- Responsive settings navigation and account controls were added for light/dark
+  layouts. No auth endpoint, cookie, token, database model, migration, or observation
+  rule changed.
+- Full verification: frontend **76 passed**, production build passed; backend
+  **318 passed, 4 skipped** (only the real five-day and PostgreSQL-only checks).
+- Work is isolated on local branch `feature/settings-page`, based on `0330655`.
+  It has not been pushed to `main` or deployed, so the live five-day observation is
+  unaffected. Merge/deploy only after the 2026-09-11 observation is safely captured.
+
+The user recorded the day-one 30-minute result for `T07 5일 실제 관찰`; the final
+evidence still needs the stored execution timestamp to establish its Seoul date.
+Day two is 2026-09-08. Make one real execution record, then make the one fixed rule
+change after day two and before the day-three execution.
+
+Next: `docs/process/T07-HANDOFF-2026-09-07.md`.
 
 ## 2026-09-06 T07 production deployed; claim and Render benchmark complete
 

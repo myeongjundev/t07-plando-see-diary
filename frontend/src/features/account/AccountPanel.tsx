@@ -1,7 +1,7 @@
-/** 계정 화면 — 비밀번호 변경과 계정 삭제. T07-C114, C134.
+/** 설정 화면의 보안 및 계정 구획 — 비밀번호 변경과 계정 삭제. T07-C114, C134.
  *
- * 설계 8절이 계정 화면 하나에 비밀번호 변경 · 내보내기 · 계정 삭제를 묶어 두었다.
- * 내보내기는 바로 위 구획(04)이 이미 하고 있어서 여기는 나머지 둘이다.
+ * 자주 쓰는 Plan·Do·See 흐름에서 분리한 /settings 안에 프로필 · 내보내기 · 계정
+ * 관리를 묶었다. 내보내기는 바로 위 구획(02)이 이미 하고 있어서 여기는 나머지 둘이다.
  *
  * 두 가지 모두 **비밀번호를 다시 받는다.** 세션만으로 되게 하면, 잠깐 자리를 비운
  * 화면이 「일기를 읽힐 기회」가 아니라 계정 탈취와 영구 삭제가 된다. 서버도 같은 것을
@@ -28,8 +28,12 @@ function messageOf(error: unknown): string {
     : "요청을 처리하지 못했습니다.";
 }
 
-export default function AccountPanel() {
-  const { account, signedOut } = useSession();
+interface AccountPanelProps {
+  id?: string;
+}
+
+export default function AccountPanel({ id }: AccountPanelProps = {}) {
+  const { signedOut } = useSession();
   const navigate = useNavigate();
 
   const [current, setCurrent] = useState("");
@@ -98,13 +102,13 @@ export default function AccountPanel() {
   }
 
   return (
-    <section className="panel account-panel" aria-label="계정">
+    <section className="panel account-panel" id={id} aria-label="보안 및 계정">
       <div className="section-heading">
         <div>
-          <span>05</span>
-          <h2>계정</h2>
+          <span>03</span>
+          <h2>보안 및 계정</h2>
         </div>
-        <p>{account?.email}</p>
+        <p>비밀번호 변경과 계정 삭제를 안전하게 관리합니다.</p>
       </div>
 
       <form onSubmit={submitChange}>
@@ -210,7 +214,7 @@ export default function AccountPanel() {
         <p className="field-hint unmet">
           계정을 삭제하면 <strong>계획 · 할 일 · 실행 기록 · 회고 · 규칙 변경 기록이 모두
           함께 지워지며, 되돌릴 수 없습니다.</strong> 남겨 두고 싶은 것이 있다면 먼저 위
-          04 구획에서 내보내기를 하세요.
+          02 구획에서 내보내기를 하세요.
         </p>
         <label>
           비밀번호

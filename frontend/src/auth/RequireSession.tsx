@@ -1,4 +1,4 @@
-/** The gate in front of /app. T07-C97.
+/** The gate in front of private routes such as /app and /settings. T07-C97.
  *
  * A visitor with no session is sent to /login and never sees the diary shell.
  * The redirect is a convenience, not the protection: every endpoint behind it

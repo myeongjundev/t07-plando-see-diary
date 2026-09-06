@@ -14,7 +14,7 @@ from app.security import passwords, redact, tokens
 # The paths the single-page app owns. The shell is served at each of them, and
 # each is no-store: index.html carries the login state's starting point, and a
 # cached copy of it is a copy of somebody's session boundary.
-SPA_ROUTES = ("/", "/login", "/signup", "/app")
+SPA_ROUTES = ("/", "/login", "/signup", "/app", "/settings")
 
 
 def create_app(test_config: dict | None = None) -> Flask:
@@ -60,10 +60,11 @@ def create_app(test_config: dict | None = None) -> Flask:
     @app.get("/login")
     @app.get("/signup")
     @app.get("/app")
+    @app.get("/settings")
     def frontend():
         """Serve index.html so a direct visit to a client route works.
 
-        Reloading on /app, or opening /login from a link, is a plain GET the
+        Reloading on /app or /settings, or opening /login from a link, is a plain GET the
         server knows nothing about -- client routing lives in the bundle, and
         without these the browser would get the API's 404 instead of the app.
 
@@ -107,4 +108,3 @@ def create_app(test_config: dict | None = None) -> Flask:
         return jsonify({"error": {"message": "요청한 주소를 찾을 수 없습니다.", "details": {}}}), 404
 
     return app
-

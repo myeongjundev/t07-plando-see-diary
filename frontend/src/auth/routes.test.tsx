@@ -42,6 +42,14 @@ function app(initial: string) {
               </RequireSession>
             }
           />
+          <Route
+            path="/settings"
+            element={
+              <RequireSession>
+                <p>설정 화면</p>
+              </RequireSession>
+            }
+          />
           <Route path="/" element={<Navigate to="/app" replace />} />
         </Routes>
       </SessionProvider>
@@ -76,6 +84,12 @@ describe("without an account (T07-C03)", () => {
     expect(screen.queryByText("다이어리 화면")).toBeNull();
   });
 
+  it("sends a visitor to /settings back to the login screen too", async () => {
+    app("/settings");
+    expect(await screen.findByRole("heading", { name: "로그인" })).toBeTruthy();
+    expect(screen.queryByText("설정 화면")).toBeNull();
+  });
+
   it("sends / to the login screen too", async () => {
     app("/");
     expect(await screen.findByRole("heading", { name: "로그인" })).toBeTruthy();
@@ -95,6 +109,11 @@ describe("with an account", () => {
   it("lets the diary through", async () => {
     app("/app");
     expect(await screen.findByText("다이어리 화면")).toBeTruthy();
+  });
+
+  it("lets account settings through", async () => {
+    app("/settings");
+    expect(await screen.findByText("설정 화면")).toBeTruthy();
   });
 
   it("keeps a signed-in user off the login screen", async () => {
