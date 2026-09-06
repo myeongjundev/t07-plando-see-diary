@@ -2,6 +2,24 @@
 
 Updated: 2026-09-07 KST
 
+## 2026-09-07 portfolio copy and README factual review
+
+Added `docs/PORTFOLIO.md` with a short introduction, project description,
+implementation highlights, linked verification evidence and existing synthetic
+screenshot captions. The user excluded presentation scripts and interview Q&A.
+Personal judgment statements and real observation records were not authored.
+
+README now distinguishes the deployed authentication/data features from the local
+settings page, removes the unsupported plan-deletion claim, describes the actual
+refresh queue/Web Locks behavior and password-change session replacement, and
+reports the latest recorded 318/4 and 76 test results. The earlier PostgreSQL test
+branch result is dated separately. Backup precedes the migration in the description.
+
+This follow-up changes documentation only. Validation is local link/image path
+resolution and `git diff --check`; application test results are carried from the
+previous implementation run, not a new execution. Work remains on
+`feature/settings-page`, with no push or deployment.
+
 ## 2026-09-07 settings page prepared locally; observation deployment remains frozen
 
 The long export and account sections were removed from the end of the daily
