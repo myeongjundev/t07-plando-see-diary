@@ -236,6 +236,26 @@ def test_the_public_https_origin_is_accepted_behind_a_tls_terminator(client):
     assert response.status_code == 200
 
 
+def test_renders_canonical_external_url_is_an_allowed_origin(monkeypatch):
+    monkeypatch.setenv("RENDER_EXTERNAL_URL", "https://diary.example")
+    app = create_app({"TESTING": True, "SQLALCHEMY_DATABASE_URI": "sqlite://"})
+    with app.app_context():
+        db.create_all()
+        client = app.test_client()
+        try:
+            assert signup(client).status_code == 201
+            response = client.post(
+                "/api/auth/login",
+                json={"email": EMAIL, "password": PASSWORD},
+                headers={"Origin": "https://diary.example"},
+            )
+            assert response.status_code == 200
+        finally:
+            db.session.remove()
+            db.drop_all()
+            db.engine.dispose()
+
+
 def test_a_forwarded_scheme_does_not_admit_a_foreign_origin(client):
     response = client.post(
         "/api/auth/login",

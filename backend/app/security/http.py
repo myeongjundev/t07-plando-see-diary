@@ -34,6 +34,13 @@ def allowed_origins() -> set[str]:
     """
     configured = os.getenv("ALLOWED_ORIGINS", "")
     extra = {value.strip() for value in configured.split(",") if value.strip()}
+
+    # Render injects the canonical public URL for every web service. Prefer it
+    # over reconstructing the public origin from proxy-facing request fields:
+    # depending on the edge path, Host can include the internal service port.
+    render_url = urlsplit(os.getenv("RENDER_EXTERNAL_URL", "").strip())
+    if render_url.scheme in {"http", "https"} and render_url.netloc:
+        extra.add(f"{render_url.scheme}://{render_url.netloc}")
     parts = urlsplit(request.host_url)
 
     # Render terminates TLS before forwarding the request to Waitress. Flask
