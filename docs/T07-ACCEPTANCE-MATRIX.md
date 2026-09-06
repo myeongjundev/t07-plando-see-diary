@@ -149,7 +149,7 @@ T07 제출 초안은 `T07-SUBMISSION.md`이며 기존 `SUBMISSION.md`는 T06 기
 | T07-C04 | 1일차에 답하려는 질문 한 문장이 고정되어 있다. | `T07-STUDY-PROTOCOL.md` | 제출문 |
 | T07-C05 | 1일차에 관찰 지표 한 개가 고정되어 있다. | 하루 계획 대비 실제 비율 | 제출문 |
 | T07-C06 | 1일차에 관찰 지표의 단위가 고정되어 있다. | 단위 `배` | 제출문 |
-| T07-C07 | Asia/Seoul 기준으로 서로 다른 실제 날짜 정확히 5일의 기록이 내 계정 안에 있다. | 내 계정의 실행 기록 날짜를 Seoul로 묶어 센다 | **자동** · `test_c07_exactly_five_distinct_seoul_dates` · 배포본 |
+| T07-C07 | Asia/Seoul 기준으로 서로 다른 실제 날짜 정확히 5일의 기록이 내 계정 안에 있다. | 내 계정의 실행 기록 날짜를 Seoul로 묶어 센다 | **자동** · `test_c07_exactly_five_distinct_seoul_dates` · 배포본 · 증거 `observation-five-days` |
 | T07-C08 | 실제 5일 기록에 같은 지표 계산 규칙이 적용된다. | 5일 전부 `실제분 ÷ 예상분` | **자동** · `test_c08_same_formula_across_five_days` |
 | T07-C23 | 값이 빠졌을 때 어떻게 처리하는지가 적혀 있다. | 프로토콜 문서 | 제출문 + **자동** · `test_c23_missing_value_rule` |
 | T07-C24 | 값이 중복될 때 어떻게 처리하는지가 적혀 있다. | 프로토콜 문서 | 제출문 + **자동** · `test_c24_duplicate_value_rule` |
