@@ -1,6 +1,37 @@
 # T07 project status (T06 history retained below)
 
-Updated: 2026-09-05 KST
+Updated: 2026-09-06 KST
+
+## 2026-09-06 T07 production deployed; claim and Render benchmark complete
+
+The existing Render service now serves the public T07 repository at
+`https://t06-plando-see-diary.onrender.com`. Production migrations, the reviewed
+T06 data claim, and the deployed-instance hashing benchmark all completed.
+
+- Production source/deployed commit: `2723b63c0b93e8dad54f03c3262f08fadeb36922`.
+  The first production migration attempt exposed an assumed PostgreSQL foreign-key
+  name; the migration now introspects the deployed constraint name and is covered
+  by three regression tests. Full backend: **312 passed, 4 skipped**.
+- Claim deploy `dep-daebc78n74is73d4j4g0`: 3 retained plans claimed, 4 reviewed
+  empty test plans deleted, 2 already-soft-deleted verification tasks deleted,
+  account created, and unowned plans changed from 7 to **0**. The pre-claim backup
+  remains `backup-20260905-before-t07-claim` (`br-rough-feather-a6lo5utr`).
+- Migrations reached heads `c48b1f60a2d7` and `d5a3e91c7f20`; the service served
+  successfully afterward. Public checks: `/` 200, `/api/live` 200,
+  anonymous `/api/auth/me` 401, and `/app` redirected to the rendered `/login` page.
+- Render benchmark deploy `dep-daebf2ht0dsc739ies40` completed at 2026-09-06
+  09:47:48 KST. The chosen Argon2id 19,456KiB/t=2/p=1 setting measured 108ms p50,
+  197ms p95; four concurrent verifications took 1,009ms with 146MiB peak RSS.
+  Full synthetic result: `docs/T07-EVIDENCE/00-hash-bench-render.md`.
+- One-time execution is disabled in Render and `render.yaml`: `BOOT_TASK=none`,
+  empty `BOOT_TASK_ARGS`. Disable deploy `dep-daebk4ht0dsc739j04kg` is Live.
+
+Remaining work is user-authenticated production verification and the real five-day
+observation. After the user signs in without sharing the password, verify the three
+claimed plans, create/select the observation plan, record `OBSERVATION_PLAN_ID`, and
+start the fixed protocol. The personal-judgment lines remain user-authored.
+
+Next: `docs/process/T07-HANDOFF-2026-09-06.md`.
 
 ## 2026-09-05 PostgreSQL passed; Render configuration ready
 
