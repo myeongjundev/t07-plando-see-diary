@@ -26,10 +26,14 @@ T06 data claim, and the deployed-instance hashing benchmark all completed.
 - One-time execution is disabled in Render and `render.yaml`: `BOOT_TASK=none`,
   empty `BOOT_TASK_ARGS`. Disable deploy `dep-daebk4ht0dsc739j04kg` is Live.
 
-Remaining work is user-authenticated production verification and the real five-day
-observation. After the user signs in without sharing the password, verify the three
-claimed plans, create/select the observation plan, record `OBSERVATION_PLAN_ID`, and
-start the fixed protocol. The personal-judgment lines remain user-authored.
+Authenticated production verification is complete: the three claimed plans and the
+linked T06 tasks, executions, aggregate, and reflection are visible to the claimed
+account. A separate `T07 5일 실제 관찰` plan was created for 2026-09-07 through
+2026-09-11, with ID `8848a88f-3814-43dc-a454-f87007b61ba7`; its day-zero screen
+showed zero tasks and zero execution dates. The same ID is set in Render as
+`OBSERVATION_PLAN_ID`, and `docs/T07-STUDY-PROTOCOL.md` is now frozen for the study.
+Remaining work is the real five daily records, the day-two rule change, export/final
+private-window verification, and the user-authored personal-judgment lines.
 
 Next: `docs/process/T07-HANDOFF-2026-09-06.md`.
 
