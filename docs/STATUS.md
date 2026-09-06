@@ -18,7 +18,8 @@ branch result is dated separately. Backup precedes the migration in the descript
 This follow-up changes documentation only. Validation is local link/image path
 resolution and `git diff --check`; application test results are carried from the
 previous implementation run, not a new execution. Work remains on
-`feature/settings-page`, with no push or deployment.
+`feature/settings-page`. The branch is pushed for continuation on the academy PC;
+`main` and the deployed observation build remain unchanged.
 
 ## 2026-09-07 settings page prepared locally; observation deployment remains frozen
 
@@ -36,9 +37,10 @@ from `/settings`, and keeps logout available in both places.
   rule changed.
 - Full verification: frontend **76 passed**, production build passed; backend
   **318 passed, 4 skipped** (only the real five-day and PostgreSQL-only checks).
-- Work is isolated on local branch `feature/settings-page`, based on `0330655`.
-  It has not been pushed to `main` or deployed, so the live five-day observation is
-  unaffected. Merge/deploy only after the 2026-09-11 observation is safely captured.
+- Work is isolated on branch `feature/settings-page`, based on `0330655`, and pushed
+  to `origin/feature/settings-page` for continuation on the academy PC. It has not
+  been merged to `main` or deployed, so the live five-day observation is unaffected.
+  Merge/deploy only after the 2026-09-11 observation is safely captured.
 
 The user recorded the day-one 30-minute result for `T07 5일 실제 관찰`; the final
 evidence still needs the stored execution timestamp to establish its Seoul date.
