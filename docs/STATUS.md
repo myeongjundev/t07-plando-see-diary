@@ -1,6 +1,36 @@
 # T07 project status (T06 history retained below)
 
-Updated: 2026-09-07 KST
+Updated: 2026-09-08 KST
+
+## 2026-09-08 observation day two and the one rule change complete
+
+The fixed production observation now has two distinct Seoul-date execution
+records. Day two used the real T07 continuation work performed in this session:
+local Settings visual review, the frontend suite/build, the backend suite, and
+the repository secret audit.
+
+- Day one remains 30 planned minutes, 30 actual minutes, one record, `1.00배`.
+- Day two is 30 planned minutes, 8 actual minutes, one record, `0.27배`; its
+  execution interval is 2026-09-08 02:18–02:26 KST.
+- The day-two task was marked complete after the checks finished.
+- At 02:27 KST the single rule change was recorded with the day-one and day-two
+  execution records cited. The old default-30-minute rule is replaced by:
+  split work into 10-minute units before starting and estimate each item
+  separately. The recorded reason is the gap between day one's `1.00배` and day
+  two's `0.27배`. The pre-change aggregate shown by production is 38/60 =
+  `0.63배`.
+- Production confirms that day-three execution is now unblocked. Do not create
+  it before 2026-09-09 KST.
+
+The local `feature/settings-page` branch was not deployed. Desktop browser QA
+covered `/settings` in dark and light themes from profile through the account
+deletion warning; no layout defect was found. Mobile visual QA remains unrun.
+Fresh verification: frontend **76 passed**, production build passed; backend
+**318 passed, 4 skipped**; the secret audit scanned the worktree, built frontend,
+and 1,456 Git objects with **0 findings**. The four skips remain the incomplete
+five-day evidence check and three PostgreSQL-only checks.
+
+Next: `docs/process/T07-HANDOFF-2026-09-08.md`.
 
 ## 2026-09-07 portfolio copy and README factual review
 
