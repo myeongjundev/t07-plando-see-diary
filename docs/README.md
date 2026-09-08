@@ -19,6 +19,9 @@
 | [RENDER-NEON.md](RENDER-NEON.md) | 실제 배포 (Render Free + Neon) |
 | [STATUS.md](STATUS.md) | 현재 상태, 근거, 남은 일 |
 | [SUBMISSION.md](SUBMISSION.md) | 제출 주소와 제출문 |
+| [T07-ACCEPTANCE-MATRIX.md](T07-ACCEPTANCE-MATRIX.md) | T07 고정 기준 68개와 검사 연결 |
+| [T07-STUDY-PROTOCOL.md](T07-STUDY-PROTOCOL.md) | 2026-09-07~11 실제 관찰의 고정 규칙 |
+| [T07-SUBMISSION.md](T07-SUBMISSION.md) | T07 제출 초안과 아직 채울 운영 기록 |
 
 원문과 자료: [`source/`](source) 공식 과제 원문 · [`screenshots/`](screenshots) README용 합성 화면
 (자료는 [`tools/seed_screenshot_fixture.py`](../tools/seed_screenshot_fixture.py)로 심고,
@@ -40,6 +43,9 @@
 | [HANDOFF-DESIGN-REVIEW.md](process/HANDOFF-DESIGN-REVIEW.md) | 디자인 브랜치 인수인계 |
 | [REVIEW-CSS-TOKEN-LAYER.md](process/REVIEW-CSS-TOKEN-LAYER.md) | 토큰 레이어 리뷰 |
 | [TODAY-CHECKLIST-2026-09-02.md](process/TODAY-CHECKLIST-2026-09-02.md) | 2026-09-02 하루 작업 |
+| [T07-FINAL-SUBMISSION-CHECKLIST.md](process/T07-FINAL-SUBMISSION-CHECKLIST.md) | 2026-09-11 관찰 종료 뒤 최종 검증·배포·제출 순서 |
+| [T07-DAILY-OBSERVATION-CHECK.md](process/T07-DAILY-OBSERVATION-CHECK.md) | 관찰 기간 중 매일 하는 짧은 확인 (읽기만) |
+| [T07-CI-PROPOSAL-AFTER-OBSERVATION.md](process/T07-CI-PROPOSAL-AFTER-OBSERVATION.md) | 관찰이 끝난 뒤 착수할 CI 제안 (워크플로 미작성) |
 | [HANDOFF-TEMPLATE.md](process/HANDOFF-TEMPLATE.md) | 인수인계 서식 |
 
 ## 지나간 문서 (`docs/archive/`)
