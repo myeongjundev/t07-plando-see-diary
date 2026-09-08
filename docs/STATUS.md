@@ -1,6 +1,28 @@
 # T07 project status (T06 history retained below)
 
-Updated: 2026-09-08 KST
+Updated: 2026-09-09 KST
+
+## 2026-09-09 observation day three complete
+
+Production now contains the third distinct Seoul-date execution record for the
+fixed five-day observation. Following the rule saved after day two, today's task
+was created as a 10-minute unit before the work began. The real verification and
+recording session ran from 00:05 to 00:09 KST: 10 planned minutes, 4 actual
+minutes, one record, `0.40배`. The task was marked complete afterward.
+
+The production table still shows the single rule change before the day-three
+record. Its comparison is unchanged: before the change, days one and two total
+38 actual / 60 planned = `0.63배`; after the change, day three currently totals
+4 actual / 10 planned = `0.40배`. No second rule change, backdating, deployment,
+or edit to the frozen study protocol occurred.
+
+Fresh verification: frontend **76 passed**, production build passed; backend
+**318 passed, 4 skipped**; the secret audit scanned the worktree, built frontend,
+and 1,481 Git objects with **0 findings**. The four skips remain the incomplete
+five-day evidence check and three PostgreSQL-only checks.
+
+Next: continue day four on 2026-09-10 KST using real work planned in 10-minute
+units before execution. See `docs/process/T07-HANDOFF-2026-09-09.md`.
 
 ## 2026-09-08 observation day two and the one rule change complete
 
