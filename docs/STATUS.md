@@ -1,6 +1,69 @@
 # T07 project status (T06 history retained below)
 
-Updated: 2026-09-06 KST
+Updated: 2026-09-08 KST
+
+## 2026-09-08 observation-period safety check; no deployment, no push
+
+관찰 2일차에 저장소 안전 점검만 수행했다. 운영 배포, 운영 데이터, 관찰 기록,
+Render 설정, 고정 문서(`T07-STUDY-PROTOCOL.md`, `T07-ACCEPTANCE-MATRIX.md`)는
+건드리지 않았고 `origin`에 아무것도 push하지 않았다.
+
+**1. `/output/`을 루트 `.gitignore`에 추가했다.** 현재 PPT·PDF는 2026-09-11 결과를
+반영하기 전의 로컬 초안이라, `git add -A` 때 바이너리 초안이 딸려 들어가는 것을
+막는다. 무시 설정은 파일을 지우지 않으며 두 초안 모두 디스크에 그대로 있다. 최종
+제출 파일은 `docs/process/T07-FINAL-SUBMISSION-CHECKLIST.md`로 따로 확정한다.
+
+**2. `docs/process/T07-DAILY-OBSERVATION-CHECK.md`를 새로 만들었다.** 최종 제출
+체크리스트는 관찰 종료 뒤의 절차라, 관찰 기간 중 매일 사람이 로그인된 브라우저로
+읽기만 하는 확인 절차가 따로 없었다. 기록이 비었거나 순서가 어긋난 것을 09-11에
+발견하면 되돌릴 방법이 없다는 것이 이 문서를 만든 이유다. `/study`의 `days`가 진행
+일수와 무관하게 항상 5행을 돌려주므로 `executionCount > 0`인 날짜를 세야 한다는
+점, 규칙 변경은 이미 하나 있으므로 두 번째를 만들면 안 된다는 점을 특히 적었다.
+기존 체크리스트는 수정하지 않았다.
+
+**3. `docs/process/T07-CI-PROPOSAL-AFTER-OBSERVATION.md`를 새로 만들었다.** 제안만
+적었고 `.github/workflows`는 만들지 않았다. 워크플로 커밋을 push하는 것 자체가
+재배포를 부를 수 있어 관찰 중에는 착수하지 않는다. 근거는 실제 사례다 — C92의
+alembic 드리프트는 검사가 저장소에 있었는데도 아무도 pytest를 돌리지 않아 드러나지
+않았고, 새 환경을 만들면서 비로소 발견됐다.
+
+검증: 백엔드 **316 passed, 4 skipped** (`backend/` 안에서 실행). `git diff --check`
+통과. `backend/pyproject.toml`의 `alembic==1.19.1` 핀 유지. 애플리케이션 구현 파일
+변경 없음.
+
+**나중에 로컬 커밋함 (같은 날 저녁, push 없음).** 위 변경들은 처음에 작업 폴더에만
+두었으나, 유실 위험이 있어 `c5ad170`·`6981d80`과 이 항목으로 나눠 **로컬에만**
+커밋했다. `origin`에는 아무것도 올리지 않았다 — Render는 push를 보지 commit을 보지
+않으므로 재배포가 일어나지 않는다. 09-11 관찰 종료 뒤 한꺼번에 push한다.
+`docs/README.md`에는 오늘 만든 두 문서(일일 확인·CI 제안)의 색인 행도 함께 넣었다.
+
+**사람이 직접 해야 하는 일:**
+
+- Render 대시보드에서 Auto-Deploy의 현재 값을 확인한다. `render.yaml`에
+  `autoDeployTrigger`가 없어 기본값은 `commit`이지만, 대시보드 설정이 blueprint를
+  덮어쓰므로 파일만 보고 단정할 수 없다. 켜져 있다면 09-11까지 끌지 판단한다.
+- 매일 `/study`와 `/rule-changes`를 로그인된 브라우저로 확인한다. 절차는 위 2번
+  문서에 있다.
+- 09-09부터는 새 규칙(10분 단위로 나누고 항목마다 따로 예상)을 따라 실제로 일한 뒤
+  실제 시간만 기록한다. 규칙 변경을 추가하지 않는다.
+
+## 2026-09-07 final-submission checklist prepared
+
+Added `docs/process/T07-FINAL-SUBMISSION-CHECKLIST.md` for the work that starts
+after the real observation ends on 2026-09-11. It fixes the safe order: preserve
+the production study response first, keep private records and exports out of Git,
+verify the settings branch, merge and rerun checks, deploy the exact final commit,
+then complete the user-authored judgment and private-window submission checks.
+No application, deployment, observation record, or fixed study rule changed.
+
+Prepared two submission artifacts without claiming the unfinished observation:
+`output/presentation/T07-final-submission-draft.pptx` is a ten-slide editable
+deck with a pending five-day result and completion checklist, and
+`output/pdf/T07-security-network-architecture.pdf` is an eight-page architecture
+brief covering network, session, request protection, ownership, migration,
+deployment evidence and known limits. Both were rendered page by page for visual
+review. The final checklist now requires replacing pending deck content only with
+the real post-2026-09-11 results.
 
 ## 2026-09-06 T07 production deployed; claim and Render benchmark complete
 
