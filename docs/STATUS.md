@@ -1,6 +1,32 @@
 # T07 project status (T06 history retained below)
 
-Updated: 2026-09-09 KST
+Updated: 2026-09-10 KST
+
+## 2026-09-10 observation day four complete
+
+Production now contains the fourth distinct Seoul-date execution record for the
+fixed five-day observation. Following the one saved rule change, today's task
+was created as a 10-minute unit before work began. The real security-focused
+verification ran from 01:12 to 01:16 KST: 10 planned minutes, 4 actual minutes,
+one record, `0.40배`, with no blocker recorded. The task was marked complete
+afterward, and production shows three completed tasks in the observation plan.
+
+The work reviewed the authentication, cookie, CSRF, JWT, session, and ownership
+boundaries and found no new security defect. Fresh verification: selected
+security coverage **67 passed**; full backend **318 passed, 4 skipped**;
+frontend **76 passed**; production build passed; the secret audit scanned the
+worktree, built frontend, and 1,487 Git objects with **0 findings**. Two selected
+tests initially hit temporary-directory ACL setup errors and both passed when
+rerun with a repository-local temporary directory.
+
+The single rule change remains untouched. Before the change, days one and two
+total 38 actual / 60 planned = `0.63배`; after the change, days three and four
+total 8 actual / 20 planned = `0.40배`. No second rule change, backdating,
+deployment, or edit to the frozen study protocol occurred.
+
+Next: on 2026-09-11 KST, create the day-five 10-minute task before real work,
+record the true result, complete it, and verify five distinct observation dates
+before assembling final evidence. See `docs/process/T07-HANDOFF-2026-09-10.md`.
 
 ## 2026-09-09 observation day three complete
 
