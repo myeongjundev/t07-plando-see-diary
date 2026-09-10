@@ -25,7 +25,31 @@ themes, found no horizontal overflow or visual defect, confirmed all three
 sections and the `/app` return link, and confirmed anonymous `/settings` ends at
 `/login`. Private exports, the synthetic QA database, and screenshots remain
 outside Git. The user approved the two first-person judgment sentences after
-reviewing them. Exact-commit deployment and private-window checks remain.
+reviewing them.
+
+## 2026-09-11 final deployment
+
+`main` at `25b3b261819f269da54e3d20d847f314573c783c` was deployed manually from
+the Render dashboard at 01:21:08 KST as `dep-dahdht5g1s2s73c5v2pg`, which
+reported Deploy succeeded. The service is `srv-dabe1mu7bikc73bv2lmg`, tracking
+`myeongjundev/t07-plando-see-diary` on `main`.
+
+The previous deployment was `1f8caed` on 2026-09-06 at 10:26 KST, so **nothing
+was deployed during the 2026-09-07 through 09-11 observation window** and this
+deployment came after the day-five record at 00:10 KST. That satisfies the frozen
+protocol's rule against deploying around the day-two rule change. Auto-deploy is
+off and every recent trigger on this service is manual.
+
+Post-deployment verification: `/`, `/login`, `/settings` and `/api/health` all
+return 200, where `/settings` returned 404 before the deploy. The served
+`index.html` moved from `last-modified: 2026-09-05` to `2026-09-10 16:21:23 GMT`
+(01:21 KST on 09-11), and the bundles it references — `index-Dt7VgvhP.js` and
+`index-CrXKLlFI.css` — are the ones this build emitted, which is what ties the
+running site to the commit above. A browser with no session was sent from
+`/settings` to the login screen, the same condition as the private-window check.
+
+Remaining: paste the submission text and the 40-character commit URL into the
+official form. `docs/T07-SUBMISSION.md` carries both.
 
 ## 2026-09-10 observation day four complete
 
