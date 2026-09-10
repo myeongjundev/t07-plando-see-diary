@@ -13,7 +13,15 @@
 [**Security Guide**](docs/T07-AUTH-GUIDE.md) ·
 [**Decision Log**](docs/DECISIONS.md)
 
-`React 19` `TypeScript` `Flask 3` `SQLAlchemy` `PostgreSQL` `Docker` `Render` `Neon`
+![React](https://img.shields.io/badge/React-19.2-61DAFB?style=flat-square&logo=react&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-7.0-3178C6?style=flat-square&logo=typescript&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-8.2-646CFF?style=flat-square&logo=vite&logoColor=white)
+![Flask](https://img.shields.io/badge/Flask-3.1-000000?style=flat-square&logo=flask&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-4169E1?style=flat-square&logo=postgresql&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Render-2496ED?style=flat-square&logo=docker&logoColor=white)
+
+**첫 접속은 느립니다.** Render 무료 인스턴스라 한동안 요청이 없으면 컨테이너가 잠들고,
+깨어나는 데 30초 이상 걸립니다. 빈 화면이 잠시 이어져도 고장이 아니라 기동 중입니다.
 
 </div>
 
@@ -24,6 +32,19 @@
 
 > 공개 화면과 문서의 예시는 합성 데이터입니다. 실제 개인 기록과 인증 정보는 저장소에
 > 포함하지 않습니다. Live Demo에서는 테스트용 정보만 입력해 주세요.
+
+<details>
+<summary><b>목차</b></summary>
+
+| 무엇을 만들었나 | 어떻게 만들었나 | 어떻게 확인했나 |
+| --- | --- | --- |
+| [프로젝트 소개](#프로젝트-소개) | [시스템 구조](#시스템-구조) | [테스트와 증거](#테스트와-증거) |
+| [T07에서 확장한 인증 경계](#t07에서-확장한-인증-경계) | [기술적으로 해결한 문제](#기술적으로-해결한-문제) | [데이터 신뢰성 원칙](#데이터-신뢰성-원칙) |
+| [핵심 기능](#핵심-기능) | [인증·보안 설계](#인증보안-설계) | [로컬 실행](#로컬-실행) |
+| [화면](#화면) | [기술 스택](#기술-스택) | [배포](#배포) |
+| | [설계 원칙](#설계-원칙) | [문서 안내](#문서-안내) |
+
+</details>
 
 ## 프로젝트 소개
 
