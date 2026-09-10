@@ -425,14 +425,37 @@ h1 {
 .account-action:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .account-action svg { flex: 0 0 auto; }
 
+/* 로그인·가입은 화면에 놓인 것이 이것 하나뿐이라 세로 가운데에 세운다. 1440×900에서
+   내용은 659px이었고 아래로 241px가 비어 있었다 — 위쪽에 붙은 카드는 화면이 덜 그려진
+   것처럼 읽힌다.
+
+   `safe`가 핵심이다. 가입 화면은 375px에서 918px까지 자라 뷰포트보다 길어지는데,
+   그냥 `center`면 넘친 만큼이 위로 밀려 스크롤로도 닿을 수 없게 된다. 넘칠 때는
+   가운데 정렬을 포기하고 위에서부터 그리는 쪽이 맞다.
+
+   `dvh`는 모바일 주소창이 접혔다 펴질 때 100vh가 실제로 보이는 높이보다 커지는 것을
+   피한다. 아래 줄을 못 읽는 브라우저는 위의 vh 값을 그대로 쓴다. */
 .auth-page {
   max-width: 30rem;
+  min-height: 100vh;
+  min-height: 100dvh;
+  justify-content: safe center;
 }
+
+/* 좁은 화면에서 테마 버튼은 히어로 아래로 줄이 바뀐다(375px에서 y=167). 그대로 두면
+   왼쪽 끝에 홀로 남아 히어로 문단의 일부처럼 보이므로, 줄이 바뀐 경우에만 오른쪽
+   끝으로 보낸다. 한 줄에 같이 서 있을 때는 space-between이 이미 그 자리를 준다. */
+.auth-page .page-top .theme-toggle { margin-left: auto; }
 
 .auth-panel form {
   display: grid;
   gap: var(--s4);
 }
+
+/* 이 화면에서 누를 것은 이 버튼 하나다. `.primary`의 `justify-self: start`는 여러
+   컨트롤이 늘어선 폼에서 버튼이 폭을 다 먹지 않게 하려는 것인데, 여기서는 로그인
+   버튼을 91px짜리 부수적인 컨트롤로 만들었다. 폼 폭을 그대로 쓴다. */
+.auth-panel form > button.primary { justify-self: stretch; }
 
 .auth-panel .field-hint {
   margin: calc(var(--s3) * -1) 0 0;
@@ -540,6 +563,23 @@ h1 {
   font-size: var(--t-sm);
   color: var(--ink-2);
 }
+
+/* styles.css에는 `a`에 대한 기본 규칙이 없어서 이 링크가 브라우저 기본색으로 나오고
+   있었다 — 라이트에서 #0000EE, 다크에서 rgb(158,158,235). 대비는 둘 다 통과하지만
+   토큰의 강조색이 아니고, 바로 위 버튼이 --accent인 화면에서 서로 다른 두 파랑이
+   맞닿는다. D-033·D-037에서 버튼이 공용 규칙 밖으로 새어 native 크롬으로 그려졌던
+   것과 같은 종류의 누락이다.
+
+   밑줄은 남긴다. 이 화면에서 --accent는 제출 버튼의 색이기도 해서, 색만으로는
+   「누를 수 있는 글자」와 그냥 강조된 글자가 구분되지 않는다. */
+.auth-switch a {
+  color: var(--accent);
+  font-weight: 500;
+  text-underline-offset: 2px;
+}
+
+.auth-switch a:hover { color: var(--accent-strong); }
+.auth-switch a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
 
 .route-checking {
   display: grid;
@@ -649,6 +689,12 @@ textarea { min-height: 88px; resize: vertical; line-height: 1.6; }
 .primary:hover:not(:disabled) { background: var(--accent-strong); border-color: var(--accent-strong); }
 .primary:active:not(:disabled) { transform: translateY(1px); }
 .primary:disabled { opacity: .5; cursor: wait; }
+
+/* 테마 버튼·계정 버튼·링크에는 다 있고 이 버튼에만 없던 표시. 키보드로만 쓰는 사람에게
+   로그인 화면의 유일한 동작이 어디 있는지 알려주는 것이 이 한 줄이다.
+   offset 2px이 중요하다 — 채워진 --accent 버튼에 --accent 테두리를 딱 붙이면 서로
+   녹아 보이지 않는다. 2px을 띄워 사이에 바탕색이 들어가야 테가 보인다. */
+.primary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .message {
   margin: var(--s4) 0 0;
