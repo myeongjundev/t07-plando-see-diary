@@ -116,12 +116,26 @@ T06의 공개형 다이어리를 단순히 로그인 화면으로 가린 것이 
 
 ## 화면
 
+### 계획 하나에 예상과 실제를 겹쳐서
+
+계획 카드의 막대는 예상을 기준선으로 두고 실제를 겹칩니다. 기준선을 화면 폭의 60%에
+고정했기 때문에 채운 길이가 곧 「계획의 몇 배인가」이고, 계획마다 눈금이 움직이지
+않아 서로 비교할 수 있습니다. 덜 걸린 만큼은 채우지 않고 빗금으로 남깁니다.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/plan-dark.png">
+  <img alt="예상 대비 실제를 막대로 겹쳐 보여주는 Plan 화면" src="docs/screenshots/plan-light.png">
+</picture>
+
 ### 실행 기록
 
 할 일과 실행 기록을 분리했습니다. 계획한 시간은 그대로 두고 실제 집중 시간은 별도
 행으로 쌓기 때문에, 계획을 사후에 고쳐 오차를 감추지 않습니다.
 
-![할 일과 실행 기록을 관리하는 Do 화면](docs/screenshots/do-light.png)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/do-dark.png">
+  <img alt="할 일과 실행 기록을 관리하는 Do 화면" src="docs/screenshots/do-light.png">
+</picture>
 
 ### 근거가 보이는 회고
 
