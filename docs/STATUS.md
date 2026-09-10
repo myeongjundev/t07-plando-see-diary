@@ -24,8 +24,8 @@ browser QA covered `/settings` at desktop and mobile widths in light and dark
 themes, found no horizontal overflow or visual defect, confirmed all three
 sections and the `/app` return link, and confirmed anonymous `/settings` ends at
 `/login`. Private exports, the synthetic QA database, and screenshots remain
-outside Git. Final documentation, the merged-main confirmation, exact-commit
-deployment, private-window checks, and the user's two judgment sentences remain.
+outside Git. The user approved the two first-person judgment sentences after
+reviewing them. Exact-commit deployment and private-window checks remain.
 
 ## 2026-09-10 observation day four complete
 
