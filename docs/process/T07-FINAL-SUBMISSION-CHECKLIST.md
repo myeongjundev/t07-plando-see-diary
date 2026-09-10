@@ -167,10 +167,28 @@ git status --short --branch
 
 ## 9. PPT와 아키텍처 PDF 확정
 
-현재 초안:
+현재 파일:
 
-- `output/presentation/T07-final-submission-draft.pptx`
-- `output/pdf/T07-security-network-architecture.pdf`
+- `output/presentation/T07-final-submission-v2.pptx` (12쪽)
+- `output/pdf/T07-security-network-architecture.pdf` (가로 A4 8쪽)
+
+둘 다 2026-09-11에 Git으로 추적하기 시작했다. `/output/`을 무시하던 이유는 5일 결과가
+나오기 전에 바이너리가 딸려 들어가는 것을 막기 위해서였고, 그 결과가 나왔다.
+
+**두 파일의 출처가 서로 다르다.**
+
+- PDF는 `tools/build_architecture_pdf.py`가 그린다. 저장소 안에서 다시 만들 수 있고,
+  실제로 배송본과 바이트 단위로 같은 결과가 나오는 것을 확인했다(생성 시각·문서 ID 제외).
+  reportlab과 맑은 고딕이 필요하다.
+- PPTX는 **저장소 안에서 다시 만들 수 없다.** 원본은 Codex 런타임에서 버전이 박힌
+  플러그인 경로(`.codex/.../presentations/26.904.11930`)에 기대어 생성됐고, 그 위에
+  화면 슬라이드 2장 추가·배포 문장 수정·쪽 번호 재계산이 손으로 얹혀 있다. 그래서
+  **이 파일은 바이너리가 곧 원본이다.** 잃어버리면 손으로 다시 만들어야 한다.
+
+원본 생성 스크립트가 배포 문구를 `DEPLOY_STATUS` 환경변수로 받고 기본값이
+「최종 Render 배포 확인 전」이었다. 초안에 남아 있던 "자동 배포 대기 · 404"는 오타가
+아니라 그 변수를 넘기지 않고 생성한 결과였다. 덱을 다시 만들 일이 있으면 이 변수를
+먼저 확인한다.
 
 - [ ] PPT의 5일 관찰 슬라이드를 실제 1~5일 수치와 전후 비교 결과로 갱신한다.
 - [ ] PPT의 「최종 제출 완료 확인」에서 실제 완료한 항목만 체크한다.

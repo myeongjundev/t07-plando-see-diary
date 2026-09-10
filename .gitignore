@@ -41,8 +41,23 @@ tmp/
 # Seeded design canvases are 2.5 MB build artifacts; keep only the sources
 /design/**/plando-see-*.html
 
-# Local submission drafts. The deck and the architecture brief still carry a
-# pending five-day result, so `git add -A` must not sweep the binaries in ahead
-# of the real 2026-09-11 numbers. Ignoring keeps the drafts on disk; the final
-# files are settled through docs/process/T07-FINAL-SUBMISSION-CHECKLIST.md.
-/output/
+# Local submission drafts. Everything under output/ is a build product and stays
+# out of the tree — renders, staging copies, capture crops.
+#
+# Two exceptions, added 2026-09-11. The reason this directory was ignored was
+# that the deck and the brief still carried a pending five-day result, and
+# `git add -A` must not sweep binaries in ahead of the real numbers. That result
+# landed, and both files now carry it.
+#
+# The brief could be rebuilt from tools/build_architecture_pdf.py, so tracking it
+# is only convenience. The deck cannot: it was generated inside a Codex runtime
+# against a version-pinned plugin path, so there is no build step here that
+# reproduces it, and it has hand-applied changes on top. For that file, the
+# binary is the source. Losing it means rebuilding it by hand.
+/output/*
+!/output/pdf/
+/output/pdf/*
+!/output/pdf/*.pdf
+!/output/presentation/
+/output/presentation/*
+!/output/presentation/*.pptx
