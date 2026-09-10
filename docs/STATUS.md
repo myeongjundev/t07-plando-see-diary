@@ -27,7 +27,47 @@ sections and the `/app` return link, and confirmed anonymous `/settings` ends at
 outside Git. The user approved the two first-person judgment sentences after
 reviewing them.
 
-## 2026-09-11 final deployment
+## 2026-09-11 second deployment — the screen pass and the artifacts
+
+`main` at `acfaa67a69360644b658d2ec811d716d58fd7528` was deployed manually from
+the Render dashboard, started 02:54:52 KST as `dep-dahetr2fngtc7397cvg0` and live
+by 02:55:49. The build log checked out that commit on `main`. This supersedes the
+01:21 deployment recorded below; that entry stays as the record of what was true
+at that hour.
+
+What this deployment carries, on top of the first: the auth screens (the submit
+button takes the form's width, the page is vertically centred with `safe`
+centring, the theme toggle no longer strands itself at narrow widths, the
+account-switch link uses `--accent` instead of the UA's link colour, and
+`.primary` has a focus ring); the settings page's deletion region, bounded and
+tinted, with `--crit-ink` bringing its button text to 5.32:1 light and 5.95:1
+dark; and a 44px touch target for the two in-field icon buttons under
+`pointer: coarse`.
+
+Also in it, though not visible in the running app: every `/app` screenshot reshot
+from one synthetic fixture so `do-dark.png` exists and all fourteen images follow
+the reader's theme; a README that warns about the free instance's cold start and
+carries a table of contents; `tools/build_architecture_pdf.py` moved out of
+`tmp/`; and the deck and the brief now tracked in Git.
+
+Post-deployment verification: `/`, `/login`, `/settings`, `/app` and
+`/api/health` all return 200. The served `index.html` carries
+`last-modified: 2026-09-10 17:55:09 GMT` (02:55 KST on 09-11), matching the
+deploy. Its bundles — `index-oabznp9J.js` and `index-YhmMqhdS.css` — have the
+same names as a local build of the same commit, which is what identifies the
+running build; status codes alone would not. A browser with no session was sent
+from `/settings` to the login screen. On that same production page the change
+was measured rather than assumed: the submit button is 414px, the switch link is
+`rgb(27, 100, 218)`, and `main.auth-page` computes `justify-content: safe center`.
+
+Before the merge: frontend 76 passed, backend 319 passed with 3 PostgreSQL-only
+skips, the production build passed, and the secret audit found 0 findings across
+the worktree, build and 1,594 Git objects.
+
+Remaining: paste the submission text and the 40-character commit URL — now
+`acfaa67…` — into the official form. `docs/T07-SUBMISSION.md` carries both.
+
+## 2026-09-11 first deployment
 
 `main` at `25b3b261819f269da54e3d20d847f314573c783c` was deployed manually from
 the Render dashboard at 01:21:08 KST as `dep-dahdht5g1s2s73c5v2pg`, which
