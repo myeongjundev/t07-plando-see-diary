@@ -123,6 +123,18 @@ T06의 공개형 다이어리를 단순히 로그인 화면으로 가린 것이 
   <img alt="직접 구현한 날짜 선택 컨트롤" src="docs/screenshots/controls-light.png">
 </picture>
 
+### 되돌릴 수 없는 일은 그렇게 보이게
+
+보호된 `/settings`는 프로필·내보내기·보안을 세 구획으로 나눕니다. 계정 삭제는 그중
+마지막이며, 지워지는 것을 문장으로 먼저 적고 비밀번호와 확인 문구를 함께 요구합니다.
+문단을 가르는 선으로는 그 무게를 전달할 수 없어, 이 구획만 테두리와 바탕을 따로 두어
+스크롤 중에도 경계가 눈에 걸리게 했습니다.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/settings-dark.png">
+  <img alt="프로필·내보내기·보안 세 구획과 별도로 표시한 계정 삭제 구획을 담은 설정 화면" src="docs/screenshots/settings-light.png">
+</picture>
+
 ## 시스템 구조
 
 프런트엔드 빌드와 Flask API를 한 출처에서 제공해 인증 경계를 단순하게 유지했습니다.
