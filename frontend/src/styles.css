@@ -558,6 +558,27 @@ h1 {
 .reveal:focus-visible { border-color: var(--accent); color: var(--ink); }
 .reveal[aria-pressed="true"] { color: var(--accent); }
 
+/* .reveal의 주석은 44px을 기준으로 적어 두었는데 실제 크기는 36px이고, 달력을 여는
+   .date-open은 32px이다. 눈으로 보이는 크기를 키우면 글자 위로 올라오므로, 보이는
+   크기는 그대로 두고 누를 수 있는 범위만 넓힌다.
+
+   pointer: coarse로 가둔 이유는 마우스에서는 이 덧면이 손해이기 때문이다. 두 버튼은
+   모두 입력칸 안 오른쪽 끝에 겹쳐 있어서, 44px 덧면은 글자 쪽으로 6px 더 나온다.
+   커서는 그만큼 정확해서 넓힐 이유가 없고, 넓히면 글자 끝을 눌러 커서를 놓으려던
+   클릭이 버튼으로 먹힌다. 손가락에서는 그 6px이 반대로 이득이다. */
+@media (pointer: coarse) {
+  .reveal::after,
+  .date-open::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 44px;
+    height: 44px;
+    transform: translate(-50%, -50%);
+  }
+}
+
 .auth-switch {
   margin: var(--s4) 0 0;
   font-size: var(--t-sm);
