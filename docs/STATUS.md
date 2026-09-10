@@ -1,6 +1,31 @@
 # T07 project status (T06 history retained below)
 
-Updated: 2026-09-10 KST
+Updated: 2026-09-11 KST
+
+## 2026-09-11 five-day observation complete; finalization in progress
+
+Production now contains one execution on each of the five distinct Seoul dates
+from 2026-09-07 through 2026-09-11. Day five used a 10-minute task created before
+the work, recorded the real 00:10–00:14 KST interval as 4 actual minutes with no
+blocker, and was completed afterward. The operating screen and a private full
+JSON export agreed; the repository keeps only the minimal non-secret study response
+in `docs/T07-EVIDENCE/observation-five-days.md`.
+
+The single rule change remains at 2026-09-08 02:27 KST, after day two ended and
+before day three began. Hand calculation matches production: before the change
+38/60 = `0.63배`, after it 12/30 = `0.40배`, and all five days total 50/90 =
+`0.56배`. The focused observation and matrix suite passed 5 tests. The complete
+backend suite passed **319 tests with 3 PostgreSQL-only skips**; frontend passed
+**76 tests**, the production build passed, and the secret audit found **0 findings**
+across the worktree, build, and 1,509 Git objects.
+
+The prepared Settings branch now includes the latest local `main`. Synthetic
+browser QA covered `/settings` at desktop and mobile widths in light and dark
+themes, found no horizontal overflow or visual defect, confirmed all three
+sections and the `/app` return link, and confirmed anonymous `/settings` ends at
+`/login`. Private exports, the synthetic QA database, and screenshots remain
+outside Git. Final documentation, the merged-main confirmation, exact-commit
+deployment, private-window checks, and the user's two judgment sentences remain.
 
 ## 2026-09-10 observation day four complete
 
