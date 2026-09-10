@@ -9,9 +9,22 @@
 
 결과물 주소: https://t06-plando-see-diary.onrender.com
 
-소스: https://github.com/myeongjundev/t07-plando-see-diary/commit/acfaa67a69360644b658d2ec811d716d58fd7528
+소스: `https://github.com/myeongjundev/t07-plando-see-diary/commit/<40자>`
 
-이 40자 commit이 현재 배포본과 같다. 확인 근거는 아래 «최종 배포» 항목에 적었다.
+**40자 해시를 이 줄에 적지 않는다.** 적어 두면 이 파일을 고치는 순간 해시가 달라져
+그 자리에서 틀린 값이 된다. T06에서 같은 이유로 `SUBMISSION.md`가 해시를 빼기로 했고
+(커밋 `4f3ed70`), 여기서도 두 번 겪었다 — 배포 뒤에 배포 사실을 적을 때마다 이 줄이
+어긋났다.
+
+제출 직전에 배포된 커밋을 그대로 쓴다. `main`이 `origin/main`과 같고 그 커밋이
+배포돼 있는 상태에서:
+
+```powershell
+git rev-parse HEAD
+```
+
+아래 «최종 배포» 항목이 그때의 배포 ID와 커밋을 기록으로 남긴다. 기록은 지난 사실을
+적는 것이라 낡지 않지만, 위의 소스 줄은 살아 있는 포인터라 낡는다.
 
 ## 짧은 확인 방법 4줄
 
