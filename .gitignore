@@ -40,3 +40,9 @@ tmp/
 
 # Seeded design canvases are 2.5 MB build artifacts; keep only the sources
 /design/**/plando-see-*.html
+
+# Local submission drafts. The deck and the architecture brief still carry a
+# pending five-day result, so `git add -A` must not sweep the binaries in ahead
+# of the real 2026-09-11 numbers. Ignoring keeps the drafts on disk; the final
+# files are settled through docs/process/T07-FINAL-SUBMISSION-CHECKLIST.md.
+/output/

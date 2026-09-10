@@ -16,6 +16,14 @@ dependencies = [
   "PyJWT>=2.10,<3",
   "Flask>=3.1,<4",
   "Flask-Migrate>=4.1,<5",
+  # Alembic arrives through Flask-Migrate, so it was the one package here with
+  # no bound of its own and the only version that drifted: a fresh install in
+  # September 2026 resolves 1.19.2 while the deployed image and the guide's
+  # version table both say 1.19.1. T07-C92 asserts the guide matches what is
+  # installed, so an unconstrained transitive dependency makes that criterion
+  # fail on whichever machine rebuilds next. Exact, because the criterion
+  # compares an exact string; raise it deliberately with the guide, together.
+  "alembic==1.19.1",
   "Flask-SQLAlchemy>=3.1,<4",
   "psycopg[binary]>=3.2,<4",
   "waitress>=3,<4",
