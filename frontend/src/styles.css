@@ -1906,10 +1906,20 @@ summary:hover { color: var(--accent); }
 
 /* 되돌릴 수 없는 것은 나머지와 같은 흐름 안에 두지 않는다. 선 하나와 여백이
    「여기서부터는 다르다」를 말한다 — 색만으로는 말하지 않는다. */
+/* 되돌릴 수 없는 구획. 지금까지는 위쪽 1px --line 하나로 나뉘어 있었는데, 그것은 이
+   파일에서 문단을 가르는 선과 똑같은 무게다. 계획·할 일·실행 기록·회고를 영구히
+   지우는 자리가 그 위 문단과 같은 굵기로 구분되어 있었다.
+
+   색은 상태라는 규칙(D-025)에 어긋나지 않는다 — 파괴는 상태다. 테두리로 구획을
+   닫아 「여기서부터는 다른 종류의 일」이라고 말하고, --crit-soft로 옅게 깔아 그
+   경계가 스크롤 중에도 눈에 걸리게 한다. 안쪽 입력칸은 --surface를 그대로 써서
+   틴트 위에 떠 보이므로 폼 자체는 읽기 어려워지지 않는다. */
 .danger-zone {
-  margin-top: var(--s5, 24px);
-  padding-top: var(--s4);
-  border-top: 1px solid var(--line);
+  margin-top: var(--s5);
+  padding: var(--s4);
+  border: 1px solid var(--crit);
+  border-radius: var(--r-card);
+  background: var(--crit-soft);
 }
 
 .danger {
@@ -1926,6 +1936,20 @@ summary:hover { color: var(--accent); }
 
 .danger:hover:not(:disabled) { background: var(--crit); color: var(--surface); }
 .danger:disabled { opacity: .5; cursor: not-allowed; }
+
+/* .primary와 같은 누락이었다. 이쪽이 더 급한 이유는 이 버튼이 하는 일이 되돌릴 수
+   없기 때문이다 — 키보드로 옮겨다니는 사람이 지금 어디에 서 있는지 모르는 채로
+   Enter를 누를 수 있는 자리가 여기여서는 안 된다. 테두리와 같은 --crit을 쓰되
+   2px 띄워, 이미 --crit 테두리가 있는 버튼에 녹아버리지 않게 한다. */
+.danger:focus-visible { outline: 2px solid var(--crit); outline-offset: 2px; }
+
+/* 구획에 --crit-soft를 깔면서 이 버튼의 글자가 흰 바탕이 아니라 틴트 위에 놓였다.
+   재보니 --crit on --crit-soft가 3.82:1 — D-040이 우선순위 배지에서 만난 것과
+   같은 값이고, 그때 만든 --crit-ink가 정확히 이 자리를 위한 색이다. 16px 800은
+   large text가 아니라 4.5:1이 적용된다. 테두리는 글자가 아니므로(UI 요소 3:1)
+   --crit 그대로 두어 구획 테두리와 같은 색을 유지한다.
+   hover는 --crit 채움에 --surface 글자로 바뀌므로 이 규칙과 무관하다. */
+.danger-zone .danger { color: var(--crit-ink); }
 
 @media (max-width: 720px) {
   .page-top-actions { width: 100%; justify-content: space-between; }
