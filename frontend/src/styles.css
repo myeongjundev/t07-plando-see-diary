@@ -398,6 +398,33 @@ h1 {
   white-space: nowrap;
 }
 
+.account-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 7px 11px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-ctl);
+  background: var(--surface);
+  color: var(--ink-2);
+  font: inherit;
+  font-weight: 700;
+  line-height: 1.2;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: border-color var(--ease), background var(--ease), color var(--ease);
+}
+
+.account-action:hover:not(:disabled) {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.account-action:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.account-action svg { flex: 0 0 auto; }
+
 .auth-page {
   max-width: 30rem;
 }
@@ -1763,6 +1790,71 @@ summary:hover { color: var(--accent); }
 
 /* ── 계정 구획 ───────────────────────────────────────────────────────── */
 
+.settings-page { max-width: 920px; }
+
+.settings-nav {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s2);
+  padding: var(--s2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  background: var(--surface-2);
+}
+
+.settings-nav a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  min-height: 44px;
+  padding: var(--s2) var(--s3);
+  border-radius: var(--r-ctl);
+  color: var(--ink-2);
+  font-size: var(--t-sm);
+  font-weight: 700;
+  text-decoration: none;
+  transition: background var(--ease), color var(--ease);
+}
+
+.settings-nav a:hover { background: var(--surface); color: var(--accent); }
+.settings-nav a:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.settings-nav span { color: var(--accent); font-family: var(--f-mono); font-size: var(--t-2xs); }
+
+.settings-page > section { scroll-margin-top: var(--s5); }
+
+.profile-summary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--s5);
+}
+
+.profile-mark {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: var(--t-h2);
+  font-weight: 800;
+}
+
+.profile-summary dl { display: grid; gap: var(--s3); margin: 0; }
+.profile-summary dl > div { display: grid; grid-template-columns: 5rem minmax(0, 1fr); gap: var(--s3); }
+.profile-summary dt { color: var(--ink-3); font-size: var(--t-sm); font-weight: 700; }
+.profile-summary dd { min-width: 0; margin: 0; color: var(--ink); font-weight: 700; overflow-wrap: anywhere; }
+
+.profile-note {
+  margin: var(--s5) 0 0;
+  padding-top: var(--s4);
+  border-top: 1px solid var(--line);
+  color: var(--ink-3);
+  font-size: var(--t-sm);
+}
+
 .account-panel form { display: grid; gap: var(--s4); }
 .account-panel h3 { margin: 0; font-size: var(--t-body); }
 
@@ -1788,3 +1880,18 @@ summary:hover { color: var(--accent); }
 
 .danger:hover:not(:disabled) { background: var(--crit); color: var(--surface); }
 .danger:disabled { opacity: .5; cursor: not-allowed; }
+
+@media (max-width: 720px) {
+  .page-top-actions { width: 100%; justify-content: space-between; }
+  .account-bar { min-width: 0; flex: 1 1 auto; }
+  .account-email { max-width: min(12rem, 36vw); }
+  .settings-nav { grid-template-columns: 1fr; }
+  .settings-nav a { justify-content: flex-start; }
+}
+
+@media (max-width: 480px) {
+  .account-email { display: none; }
+  .profile-summary { align-items: start; gap: var(--s4); }
+  .profile-mark { width: 48px; height: 48px; }
+  .profile-summary dl > div { grid-template-columns: 1fr; gap: 0; }
+}

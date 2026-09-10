@@ -10,8 +10,6 @@ import {
 } from "./api/plans";
 import TaskPanel from "./features/tasks/TaskPanel";
 import SeePanel from "./features/see/SeePanel";
-import ExportPanel from "./features/export/ExportPanel";
-import AccountPanel from "./features/account/AccountPanel";
 import ThemeToggle from "./ThemeToggle";
 import AccountBar from "./auth/AccountBar";
 import PlanGauge from "./features/plans/PlanGauge";
@@ -316,8 +314,6 @@ function App() {
       </section>
       <TaskPanel key={selectedPlan?.id ?? "empty"} plan={selectedPlan} onDataChange={() => setDataRevision((value) => value + 1)} />
       <SeePanel plan={selectedPlan} revision={dataRevision} onPlanCreated={(plan) => acceptPlan(plan, "plan-step")} onOpenPlan={setSelectedPlanId} />
-      <ExportPanel />
-      <AccountPanel />
     </main>
   );
 }

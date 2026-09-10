@@ -1,7 +1,156 @@
 # T07 project status (T06 history retained below)
 
-Updated: 2026-09-08 KST
+Updated: 2026-09-11 KST
 
+## 2026-09-11 five-day observation complete; finalization in progress
+
+Production now contains one execution on each of the five distinct Seoul dates
+from 2026-09-07 through 2026-09-11. Day five used a 10-minute task created before
+the work, recorded the real 00:10–00:14 KST interval as 4 actual minutes with no
+blocker, and was completed afterward. The operating screen and a private full
+JSON export agreed; the repository keeps only the minimal non-secret study response
+in `docs/T07-EVIDENCE/observation-five-days.md`.
+
+The single rule change remains at 2026-09-08 02:27 KST, after day two ended and
+before day three began. Hand calculation matches production: before the change
+38/60 = `0.63배`, after it 12/30 = `0.40배`, and all five days total 50/90 =
+`0.56배`. The focused observation and matrix suite passed 5 tests. The complete
+backend suite passed **319 tests with 3 PostgreSQL-only skips**; frontend passed
+**76 tests**, the production build passed, and the secret audit found **0 findings**
+across the worktree, build, and 1,509 Git objects.
+
+The prepared Settings branch now includes the latest local `main`. Synthetic
+browser QA covered `/settings` at desktop and mobile widths in light and dark
+themes, found no horizontal overflow or visual defect, confirmed all three
+sections and the `/app` return link, and confirmed anonymous `/settings` ends at
+`/login`. Private exports, the synthetic QA database, and screenshots remain
+outside Git. Final documentation, the merged-main confirmation, exact-commit
+deployment, private-window checks, and the user's two judgment sentences remain.
+
+## 2026-09-10 observation day four complete
+
+Production now contains the fourth distinct Seoul-date execution record for the
+fixed five-day observation. Following the one saved rule change, today's task
+was created as a 10-minute unit before work began. The real security-focused
+verification ran from 01:12 to 01:16 KST: 10 planned minutes, 4 actual minutes,
+one record, `0.40배`, with no blocker recorded. The task was marked complete
+afterward, and production shows three completed tasks in the observation plan.
+
+The work reviewed the authentication, cookie, CSRF, JWT, session, and ownership
+boundaries and found no new security defect. Fresh verification: selected
+security coverage **67 passed**; full backend **318 passed, 4 skipped**;
+frontend **76 passed**; production build passed; the secret audit scanned the
+worktree, built frontend, and 1,487 Git objects with **0 findings**. Two selected
+tests initially hit temporary-directory ACL setup errors and both passed when
+rerun with a repository-local temporary directory.
+
+The single rule change remains untouched. Before the change, days one and two
+total 38 actual / 60 planned = `0.63배`; after the change, days three and four
+total 8 actual / 20 planned = `0.40배`. No second rule change, backdating,
+deployment, or edit to the frozen study protocol occurred.
+
+Next: on 2026-09-11 KST, create the day-five 10-minute task before real work,
+record the true result, complete it, and verify five distinct observation dates
+before assembling final evidence. See `docs/process/T07-HANDOFF-2026-09-10.md`.
+
+## 2026-09-09 observation day three complete
+
+Production now contains the third distinct Seoul-date execution record for the
+fixed five-day observation. Following the rule saved after day two, today's task
+was created as a 10-minute unit before the work began. The real verification and
+recording session ran from 00:05 to 00:09 KST: 10 planned minutes, 4 actual
+minutes, one record, `0.40배`. The task was marked complete afterward.
+
+The production table still shows the single rule change before the day-three
+record. Its comparison is unchanged: before the change, days one and two total
+38 actual / 60 planned = `0.63배`; after the change, day three currently totals
+4 actual / 10 planned = `0.40배`. No second rule change, backdating, deployment,
+or edit to the frozen study protocol occurred.
+
+Fresh verification: frontend **76 passed**, production build passed; backend
+**318 passed, 4 skipped**; the secret audit scanned the worktree, built frontend,
+and 1,481 Git objects with **0 findings**. The four skips remain the incomplete
+five-day evidence check and three PostgreSQL-only checks.
+
+Next: continue day four on 2026-09-10 KST using real work planned in 10-minute
+units before execution. See `docs/process/T07-HANDOFF-2026-09-09.md`.
+
+## 2026-09-08 observation day two and the one rule change complete
+
+The fixed production observation now has two distinct Seoul-date execution
+records. Day two used the real T07 continuation work performed in this session:
+local Settings visual review, the frontend suite/build, the backend suite, and
+the repository secret audit.
+
+- Day one remains 30 planned minutes, 30 actual minutes, one record, `1.00배`.
+- Day two is 30 planned minutes, 8 actual minutes, one record, `0.27배`; its
+  execution interval is 2026-09-08 02:18–02:26 KST.
+- The day-two task was marked complete after the checks finished.
+- At 02:27 KST the single rule change was recorded with the day-one and day-two
+  execution records cited. The old default-30-minute rule is replaced by:
+  split work into 10-minute units before starting and estimate each item
+  separately. The recorded reason is the gap between day one's `1.00배` and day
+  two's `0.27배`. The pre-change aggregate shown by production is 38/60 =
+  `0.63배`.
+- Production confirms that day-three execution is now unblocked. Do not create
+  it before 2026-09-09 KST.
+
+The local `feature/settings-page` branch was not deployed. Desktop browser QA
+covered `/settings` in dark and light themes from profile through the account
+deletion warning; no layout defect was found. Mobile visual QA remains unrun.
+Fresh verification: frontend **76 passed**, production build passed; backend
+**318 passed, 4 skipped**; the secret audit scanned the worktree, built frontend,
+and 1,456 Git objects with **0 findings**. The four skips remain the incomplete
+five-day evidence check and three PostgreSQL-only checks.
+
+Next: `docs/process/T07-HANDOFF-2026-09-08.md`.
+
+## 2026-09-07 portfolio copy and README factual review
+
+Added `docs/PORTFOLIO.md` with a short introduction, project description,
+implementation highlights, linked verification evidence and existing synthetic
+screenshot captions. The user excluded presentation scripts and interview Q&A.
+Personal judgment statements and real observation records were not authored.
+
+README now distinguishes the deployed authentication/data features from the local
+settings page, removes the unsupported plan-deletion claim, describes the actual
+refresh queue/Web Locks behavior and password-change session replacement, and
+reports the latest recorded 318/4 and 76 test results. The earlier PostgreSQL test
+branch result is dated separately. Backup precedes the migration in the description.
+
+This follow-up changes documentation only. Validation is local link/image path
+resolution and `git diff --check`; application test results are carried from the
+previous implementation run, not a new execution. Work remains on
+`feature/settings-page`. The branch is pushed for continuation on the academy PC;
+`main` and the deployed observation build remain unchanged.
+
+## 2026-09-07 settings page prepared locally; observation deployment remains frozen
+
+The long export and account sections were removed from the end of the daily
+Plan·Do·See screen and placed on a dedicated protected `/settings` route. The
+signed-in account bar now links to Settings from `/app`, links back to the diary
+from `/settings`, and keeps logout available in both places.
+
+- `/settings` contains profile email/join date, full JSON export, password change,
+  and the existing password-confirmed account deletion flow and deletion warning.
+- Flask explicitly serves the SPA shell at `/settings` and applies `no-store`; the
+  route uses the same `RequireSession` gate as `/app`. Unknown subpaths still 404.
+- Responsive settings navigation and account controls were added for light/dark
+  layouts. No auth endpoint, cookie, token, database model, migration, or observation
+  rule changed.
+- Full verification: frontend **76 passed**, production build passed; backend
+  **318 passed, 4 skipped** (only the real five-day and PostgreSQL-only checks).
+- Work is isolated on branch `feature/settings-page`, based on `0330655`, and pushed
+  to `origin/feature/settings-page` for continuation on the academy PC. It has not
+  been merged to `main` or deployed, so the live five-day observation is unaffected.
+  Merge/deploy only after the 2026-09-11 observation is safely captured.
+
+The user recorded the day-one 30-minute result for `T07 5일 실제 관찰`; the final
+evidence still needs the stored execution timestamp to establish its Seoul date.
+Day two is 2026-09-08. Make one real execution record, then make the one fixed rule
+change after day two and before the day-three execution.
+
+Next: `docs/process/T07-HANDOFF-2026-09-07.md`.
 ## 2026-09-08 observation-period safety check; no deployment, no push
 
 관찰 2일차에 저장소 안전 점검만 수행했다. 운영 배포, 운영 데이터, 관찰 기록,
@@ -64,7 +213,6 @@ brief covering network, session, request protection, ownership, migration,
 deployment evidence and known limits. Both were rendered page by page for visual
 review. The final checklist now requires replacing pending deck content only with
 the real post-2026-09-11 results.
-
 ## 2026-09-06 T07 production deployed; claim and Render benchmark complete
 
 The existing Render service now serves the public T07 repository at

@@ -5,6 +5,7 @@ import App from "./App";
 import CredentialsPage from "./auth/CredentialsPage";
 import RequireSession from "./auth/RequireSession";
 import { SessionProvider } from "./auth/SessionProvider";
+import SettingsPage from "./features/account/SettingsPage";
 import { apply, readChoice } from "./theme";
 import "./styles.css";
 
@@ -26,6 +27,14 @@ createRoot(document.getElementById("root")!).render(
             element={
               <RequireSession>
                 <App />
+              </RequireSession>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <RequireSession>
+                <SettingsPage />
               </RequireSession>
             }
           />
